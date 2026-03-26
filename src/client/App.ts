@@ -158,11 +158,11 @@ export class App extends EventEmitter {
     return this;
   }
 
-  login(token: string): this {
+  run(token: string): this {
     this.token = token.startsWith('Bot ') ? token.slice(4) : token;
 
     if (!this.token || this.token.trim() === '' || this.token === 'TOKEN_BURAYA') {
-      throw new Error('[discordjs-nextgen] Geçerli bir bot tokeni girilmedi. app.login("TOKEN") ile tokeni ver.');
+      throw new Error('[discordjs-nextgen] Geçerli bir bot tokeni girilmedi. app.run("TOKEN") ile tokeni ver.');
     }
 
     this.rest.setToken(this.token);
@@ -183,6 +183,10 @@ export class App extends EventEmitter {
 
     this.gateway.connect();
     return this;
+  }
+
+  login(token: string): this {
+    return this.run(token);
   }
 
   private handleDispatch(event: string, data: unknown): void {

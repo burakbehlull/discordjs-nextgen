@@ -44,7 +44,7 @@ app.slash({
 // 3. Eventleri (Olayları) Yükle
 app.events('events');
 
-app.login('YOUR_DISCORD_TOKEN');
+app.run('YOUR_DISCORD_TOKEN');
 ```
 
 ### Örnek Prefix Komutu
