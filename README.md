@@ -95,6 +95,83 @@ const readyEvent: AppEvent<'ready'> = {
 export default readyEvent;
 ```
 
+### Gelişmiş Prefix Komutu
+`commands/prefix/admin.ts`
+```typescript
+import { PrefixCommand } from 'discordjs-nextgen';
+
+const adminCommand: PrefixCommand = {
+  name: 'temizle',
+  description: 'Mesajları toplu siler',
+  aliases: ['purge', 'sil'],
+  cooldown: 5, // 5 saniye bekleme süresi
+  permissions: ['MANAGE_MESSAGES'], // Gerekli yetkiler
+  run: async (message, args) => {
+    const miktar = parseInt(args[0]) || 10;
+    // ... temizleme mantığı
+    await message.reply(`${miktar} mesaj siliniyor...`);
+  },
+};
+
+export default adminCommand;
+```
+
+### Seçenekli Slash Komutu
+`commands/slash/say.ts`
+```typescript
+import { SlashCommand, SlashCommandBuilder } from 'discordjs-nextgen';
+
+const sayCommand: SlashCommand = {
+  data: new SlashCommandBuilder()
+    .setName('söyle')
+    .setDescription('Bota bir şey söyletir')
+    .addOption({
+      name: 'mesaj',
+      description: 'Söylenecek mesaj',
+      type: 'string',
+      required: true
+    }),
+  run: async (interaction) => {
+    const mesaj = interaction.options.get('mesaj');
+    await interaction.reply({ content: mesaj });
+  },
+};
+
+export default sayCommand;
+```
+
+### Embed ve Buton Kullanımı
+`commands/prefix/info.ts`
+```typescript
+import { PrefixCommand, EmbedBuilder, ButtonBuilder, ActionRowBuilder } from 'discordjs-nextgen';
+
+const infoCommand: PrefixCommand = {
+  name: 'bilgi',
+  run: async (message) => {
+    const embed = new EmbedBuilder()
+      .setTitle('Bot Bilgi')
+      .setDescription('discordjs-nextgen ile geliştirildi!')
+      .setColor('#0099ff')
+      .addField('Geliştirici', 'Siz', true)
+      .setTimestamp();
+
+    const button = new ButtonBuilder()
+      .setLabel('Web Sitesi')
+      .setURL('https://example.com')
+      .setStyle('link');
+
+    const row = new ActionRowBuilder().addButton(button);
+
+    await message.reply({
+      embeds: [embed],
+      components: [row]
+    });
+  },
+};
+
+export default infoCommand;
+```
+
 ## 📖 Metodlar
 
 ### `app.prefix(options)`

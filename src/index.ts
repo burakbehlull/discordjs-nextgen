@@ -1,5 +1,5 @@
 export { App } from './client/App';
-export type { AppOptions, AppEvents } from './client/App';
+export type { AppOptions, AppEvents, AppEvent } from './client/App';
 
 export { EmbedBuilder } from './builders/EmbedBuilder';
 export { SlashCommandBuilder } from './builders/SlashCommandBuilder';
