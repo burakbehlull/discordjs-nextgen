@@ -1,9 +1,10 @@
 import type { Interaction } from '../structures/Interaction';
 import type { SlashCommandBuilder } from '../builders/SlashCommandBuilder';
+import { Context } from '../structures/Context';
 
 export interface SlashCommand {
   data: SlashCommandBuilder;
-  run: (interaction: Interaction) => Promise<void> | void;
+  run: (ctx: Context) => Promise<void> | void;
 }
 
 export interface CommandHandlerOptions {
@@ -36,16 +37,13 @@ export class CommandHandler {
     const cmd = this.commands.get(interaction.commandName);
     if (!cmd) return;
 
+    const ctx = new Context(interaction);
     try {
-      await cmd.run(interaction);
+      await cmd.run(ctx);
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
       const msg = `Komut çalıştırılırken hata oluştu: \`${error}\``;
-      if (interaction.replied) {
-        await interaction.followUp({ content: msg, ephemeral: true }).catch(() => null);
-      } else {
-        await interaction.reply({ content: msg, ephemeral: true }).catch(() => null);
-      }
+      await ctx.reply({ content: msg, ephemeral: true }).catch(() => null);
     }
   }
 

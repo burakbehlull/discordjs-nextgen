@@ -21,6 +21,7 @@ export class Interaction {
   readonly commandName: string | null;
   readonly customId: string | null;
   readonly user: User;
+  readonly createdAt: Date;
   private options: Map<string, string | number | boolean>;
   private rest: RESTClient;
   private _replied = false;
@@ -36,6 +37,7 @@ export class Interaction {
     this.commandName = data.data?.name ?? null;
     this.customId = data.data?.custom_id ?? null;
     this.rest = rest;
+    this.createdAt = new Date(Number((BigInt(this.id) >> 22n) + 1420070400000n));
 
     const rawUser = data.member?.user ?? data.user;
     if (!rawUser) throw new Error('Interaction has no user');

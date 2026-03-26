@@ -62,6 +62,7 @@ export declare class App extends EventEmitter {
     })): this;
     commands(options: CommandHandlerOptions): this;
     events(folderPath: string): this;
+    run(token: string): this;
     login(token: string): this;
     private handleDispatch;
     fetchUser(userId: string): Promise<User>;

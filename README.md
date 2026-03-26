@@ -1,14 +1,15 @@
-# discordjs-nextgen
+# discordjs-nextgen 🚀
 
-Basit, hızlı ve modüler bir Discord bot kütüphanesi. Hem **ESM** hem de **CommonJS** desteği ile modern geliştirme standartlarına uygundur.
+Basit, hızlı ve modüler bir Discord bot framework'ü. Hem **ESM** hem de **CommonJS** desteği ile modern geliştirme standartlarına uygundur.
 
-## 🚀 Özellikler
+## 🌟 Neden discordjs-nextgen?
 
-- **Dinamik Yükleyici**: Komutları ve eventleri klasörlerden otomatik olarak yükleyin.
-- **Prefix & Slash Desteği**: Hem geleneksel prefix komutlarını hem de modern slash komutlarını kolayca yönetin.
-- **Event Yönetimi**: Olayları modüler dosyalar halinde düzenleyin.
-- **Hibrit Modül**: Hem `import` hem de `require` ile sorunsuz çalışır.
-- **TypeScript Desteği**: Tam tip güvenliği ile hatasız geliştirme.
+- **Fluent API**: Zincirleme metodlarla botunuzu saniyeler içinde yapılandırın.
+- **Dinamik Yükleyici**: Komutları ve olayları klasörlerden otomatik olarak yükleyin.
+- **Hibrit Komut Sistemi**: Tek kodla hem Prefix hem Slash komutu oluşturun.
+- **Middleware Desteği**: Komutlar öncesi çalışacak ara yazılımlar (logging, auth, cooldown vb.) ekleyin.
+- **Context Abstraction**: Mesaj ve Interaction yapılarını tek bir `Context` nesnesiyle yönetin.
+- **Plugin Sistemi**: Kütüphaneyi eklentilerle modüler bir şekilde genişletin.
 
 ## 📦 Kurulum
 
@@ -18,7 +19,7 @@ npm install discordjs-nextgen
 yarn add discordjs-nextgen
 ```
 
-## 🛠️ Hızlı Başlangıç
+## 🛠️ Hızlı Başlangıç (v4 Mimari)
 
 ### Ana Dosya (bot.ts)
 
@@ -26,167 +27,140 @@ yarn add discordjs-nextgen
 import { App, Intents } from 'discordjs-nextgen';
 
 const app = new App({
-  intents: Intents.ALL, // Gerekli intentleri belirleyin
+  intents: Intents.ALL,
 });
 
-// 1. Prefix Komutlarını Yükle
-app.prefix({
-  folder: 'commands/prefix',
-  prefix: '!',
-  ignoreBots: true
-});
-
-// 2. Slash Komutlarını Yükle
-app.slash({
-  folder: 'commands/slash'
-});
-
-// 3. Eventleri (Olayları) Yükle
-app.events('events');
-
-app.run('YOUR_DISCORD_TOKEN');
+app
+  // 1. Middleware (Ara Yazılım)
+  .use((ctx, next) => {
+    console.log(`[LOG] ${ctx.author.tag} komut kullandı.`);
+    next();
+  })
+  // 2. Hibrit Komutları Yükle (Hem ! hem / olarak çalışır)
+  .command({
+    folder: 'commands/hybrid'
+  })
+  // 3. Sadece Prefix Komutları
+  .prefix({
+    folder: 'commands/prefix',
+    prefix: '!',
+  })
+  // 4. Sadece Slash Komutları
+  .slash({
+    folder: 'commands/slash'
+  })
+  // 5. Olayları Yükle
+  .events('events')
+  // 6. Botu Çalıştır
+  .run('YOUR_DISCORD_TOKEN');
 ```
 
-### Örnek Prefix Komutu
-`commands/prefix/ping.ts`
+## 🧩 Örnekler
+
+### Hibrit Komut (HybridCommand)
+`commands/hybrid/ping.ts`
+```typescript
+import { HybridCommand } from 'discordjs-nextgen';
+
+const pingHybrid: HybridCommand = {
+  name: 'ping',
+  description: 'Hem prefix hem slash olarak çalışır!',
+  run: async (ctx) => {
+    const delay = Date.now() - ctx.createdAt.getTime();
+    await ctx.reply(`Pong! Gecikme: **${delay}ms**`);
+  },
+};
+
+export default pingHybrid;
+```
+
+### Prefix Komutu (Cooldown & Yetki)
+`commands/prefix/slow.ts`
 ```typescript
 import { PrefixCommand } from 'discordjs-nextgen';
 
-const pingCommand: PrefixCommand = {
-  name: 'ping',
-  run: async (message) => {
-    await message.reply('Pong!');
+const slowCommand: PrefixCommand = {
+  name: 'slow',
+  description: 'Bekleme süreli komut',
+  cooldown: 10, // 10 saniye
+  permissions: ['MANAGE_MESSAGES'],
+  run: async (ctx) => {
+    await ctx.reply('Bu komut 10 saniyede bir kullanılabilir.');
   },
 };
 
-export default pingCommand;
+export default slowCommand;
 ```
 
-### Örnek Slash Komutu
-`commands/slash/ping.ts`
-```typescript
-import { SlashCommandBuilder, SlashCommand } from 'discordjs-nextgen';
-
-const pingSlash: SlashCommand = {
-  data: new SlashCommandBuilder()
-    .setName('ping')
-    .setDescription('Botun gecikmesini ölçer'),
-  run: async (interaction) => {
-    await interaction.reply('Pong!');
-  },
-};
-
-export default pingSlash;
-```
-
-### Örnek Event
-`events/ready.ts`
+### Olay (AppEvent)
+`events/messageCreate.ts`
 ```typescript
 import { AppEvent } from 'discordjs-nextgen';
 
-const readyEvent: AppEvent<'ready'> = {
-  name: 'ready',
-  once: true,
-  run: (user) => {
-    console.log(`${user.tag} hazır!`);
+const messageEvent: AppEvent<'messageCreate'> = {
+  name: 'messageCreate',
+  run: (message) => {
+    if (message.author.bot) return;
+    console.log(`Mesaj geldi: ${message.content}`);
   },
 };
 
-export default readyEvent;
+export default messageEvent;
 ```
 
-### Gelişmiş Prefix Komutu
-`commands/prefix/admin.ts`
+## 🧠 Gelişmiş Özellikler
+
+### Context Sistemi
+`ctx` nesnesi, mesajın veya etkileşimin (interaction) tüm detaylarını ortak bir yapıda sunar:
+- `ctx.user`: Komutu kullanan kullanıcı.
+- `ctx.guild`: Komutun kullanıldığı sunucu.
+- `ctx.channel`: Komutun kullanıldığı kanal.
+- `ctx.reply()`: Mesaj veya etkileşime yanıt verme.
+- `ctx.isInteraction`: Komut slash mı?
+- `ctx.args`: Komut argümanları (dizi).
+
+### Middleware Sistemi
+Her komut çalışmadan önce çalışacak fonksiyonlar zinciri:
 ```typescript
-import { PrefixCommand } from 'discordjs-nextgen';
-
-const adminCommand: PrefixCommand = {
-  name: 'temizle',
-  description: 'Mesajları toplu siler',
-  aliases: ['purge', 'sil'],
-  cooldown: 5, // 5 saniye bekleme süresi
-  permissions: ['MANAGE_MESSAGES'], // Gerekli yetkiler
-  run: async (message, args) => {
-    const miktar = parseInt(args[0]) || 10;
-    // ... temizleme mantığı
-    await message.reply(`${miktar} mesaj siliniyor...`);
-  },
-};
-
-export default adminCommand;
+app.use(async (ctx, next) => {
+  if (ctx.user.id === 'BANLI_ID') return; // Komutu durdurur
+  await next(); // Zinciri devam ettirir
+});
 ```
 
-### Seçenekli Slash Komutu
-`commands/slash/say.ts`
+### Plugin Sistemi
+Eklenti bazlı geliştirme:
 ```typescript
-import { SlashCommand, SlashCommandBuilder } from 'discordjs-nextgen';
-
-const sayCommand: SlashCommand = {
-  data: new SlashCommandBuilder()
-    .setName('söyle')
-    .setDescription('Bota bir şey söyletir')
-    .addOption({
-      name: 'mesaj',
-      description: 'Söylenecek mesaj',
-      type: 'string',
-      required: true
-    }),
-  run: async (interaction) => {
-    const mesaj = interaction.options.get('mesaj');
-    await interaction.reply({ content: mesaj });
-  },
-};
-
-export default sayCommand;
+app.use({
+  name: 'my-plugin',
+  setup: (bot) => {
+    bot.on('ready', () => console.log('Plugin hazır!'));
+  }
+});
 ```
 
-### Embed ve Buton Kullanımı
-`commands/prefix/info.ts`
-```typescript
-import { PrefixCommand, EmbedBuilder, ButtonBuilder, ActionRowBuilder } from 'discordjs-nextgen';
+## � API Referansı
 
-const infoCommand: PrefixCommand = {
-  name: 'bilgi',
-  run: async (message) => {
-    const embed = new EmbedBuilder()
-      .setTitle('Bot Bilgi')
-      .setDescription('discordjs-nextgen ile geliştirildi!')
-      .setColor('#0099ff')
-      .addField('Geliştirici', 'Siz', true)
-      .setTimestamp();
+### `App` Sınıfı
 
-    const button = new ButtonBuilder()
-      .setLabel('Web Sitesi')
-      .setURL('https://example.com')
-      .setStyle('link');
+- `new App(options)`: Yeni bir uygulama örneği oluşturur.
+- `.use(middleware | plugin)`: Ara yazılım veya eklenti ekler.
+- `.prefix(options)`: Prefix komutlarını yapılandırır.
+- `.slash(options)`: Slash komutlarını yapılandırır.
+- `.command(options)`: Hibrit komutları yapılandırır.
+- `.events(folder)`: Olayları klasörden yükler.
+- `.run(token)`: Botu başlatır.
 
-    const row = new ActionRowBuilder().addButton(button);
+### `Context` Nesnesi
 
-    await message.reply({
-      embeds: [embed],
-      components: [row]
-    });
-  },
-};
+Her komutun `run` fonksiyonuna iletilen nesnedir:
+- `ctx.author`: Komutu çalıştıran `User`.
+- `ctx.message`: Eğer prefix komutuysa `Message` nesnesi, değilse `null`.
+- `ctx.interaction`: Eğer slash komutuysa `Interaction` nesnesi, değilse `null`.
+- `ctx.isInteraction`: Komutun etkileşim (slash) olup olmadığını belirtir.
+- `ctx.createdAt`: Komutun oluşturulma tarihi (`Date`).
+- `ctx.args`: Komutla birlikte gelen argümanlar dizisi.
+- `ctx.reply(content | options)`: Kullanıcıya yanıt verir.
 
-export default infoCommand;
-```
-
-## 📖 Metodlar
-
-### `app.prefix(options)`
-Prefix komutlarını yapılandırır ve klasörden yükler.
-- `folder`: Komutların bulunduğu klasör yolu.
-- `prefix`: Botun kullanacağı prefix (Dize veya dizi).
-- `ignoreBots`: Bot mesajlarının yoksayılıp sayılmayacağı.
-
-### `app.slash(options)`
-Slash komutlarını yapılandırır ve klasörden yükler.
-- `folder`: Komutların bulunduğu klasör yolu.
-- `guildId`: (Opsiyonel) Komutları sadece belirli bir sunucuya kaydetmek için.
-
-### `app.events(folderPath)`
-Belirtilen klasördeki tüm event dosyalarını otomatik olarak yükler.
-
-## 📄 Lisans
+## �📄 Lisans
 MIT

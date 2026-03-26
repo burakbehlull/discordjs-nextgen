@@ -10,8 +10,21 @@ import { SlashCommandBuilder } from '../builders/SlashCommandBuilder';
 import { Logger } from '../utils/Logger';
 import { PrefixHandler, type PrefixOptions, type PrefixCommand } from '../handlers/PrefixHandler';
 import { CommandHandler, type CommandHandlerOptions, type SlashCommand } from '../handlers/CommandHandler';
+import { SlashCommandBuilder, type SlashCommandOption } from '../builders/SlashCommandBuilder';
 import { FileLoader } from '../utils/FileLoader';
+import { MiddlewareManager, type MiddlewareFunction } from '../utils/MiddlewareManager';
+import { Context } from '../structures/Context';
 import path from 'path';
+
+export interface HybridCommand {
+  name: string;
+  description: string;
+  aliases?: string[];
+  cooldown?: number;
+  permissions?: any[];
+  options?: SlashCommandOption[];
+  run: (ctx: Context, args: string[]) => Promise<void> | void;
+}
 import type { PresenceData, RawMessage, RawGuild, RawInteraction, RawUser, RawChannel } from '../types/raw';
 import { Intents } from '../types/constants';
 
@@ -44,6 +57,10 @@ export interface App {
   emit<K extends keyof AppEvents>(event: K, ...args: AppEvents[K]): boolean;
 }
 
+export interface HybridOptions extends Partial<Omit<HybridCommand, 'run' | 'name' | 'description'>> {
+  folder?: string;
+}
+
 export class App extends EventEmitter {
   readonly rest: RESTClient;
   readonly guilds: Map<string, Guild> = new Map();
@@ -54,6 +71,7 @@ export class App extends EventEmitter {
   private token: string | null = null;
   private prefixHandler: PrefixHandler | null = null;
   private commandHandler: CommandHandler | null = null;
+  private middlewareManager: MiddlewareManager = new MiddlewareManager();
   user: User | null = null;
 
   constructor(private options: AppOptions = {}) {
@@ -85,7 +103,10 @@ export class App extends EventEmitter {
     }
 
     this.on('messageCreate', (message) => {
-      this.prefixHandler!.handle(message).catch((err: Error) => {
+      const ctx = new Context(message);
+      this.middlewareManager.run(ctx, async () => {
+        await this.prefixHandler!.handle(message);
+      }).catch((err: Error) => {
         Logger.error(`Prefix handler hatası: ${err.message}`);
       });
     });
@@ -131,13 +152,73 @@ export class App extends EventEmitter {
 
     this.on('interactionCreate', (interaction) => {
       if (this.commandHandler) {
-        this.commandHandler.handle(interaction).catch((err: Error) => {
+        const ctx = new Context(interaction);
+        this.middlewareManager.run(ctx, async () => {
+          await this.commandHandler!.handle(interaction);
+        }).catch((err: Error) => {
           Logger.error(`Command handler hatası: ${err.message}`);
         });
       }
     });
 
     return this;
+  }
+
+  use(fn: MiddlewareFunction | { name: string; setup: (app: App) => void }): this {
+    if (typeof fn === 'function') {
+      this.middlewareManager.use(fn);
+    } else if (typeof fn === 'object' && 'setup' in fn) {
+      fn.setup(this);
+    }
+    return this;
+  }
+
+  command(options: string | (HybridOptions & { folder: string }) | HybridCommand): this {
+    if (typeof options === 'string' || (typeof options === 'object' && 'folder' in options)) {
+      const folderPath = typeof options === 'string' ? options : options.folder!;
+      FileLoader.loadFiles<HybridCommand>(folderPath).then((cmds) => {
+        for (const cmd of cmds) {
+          this.registerHybrid(cmd);
+        }
+        Logger.success(`${cmds.length} hybrid komutu [${folderPath}] klasöründen yüklendi.`);
+      });
+    } else {
+      this.registerHybrid(options as HybridCommand);
+    }
+    return this;
+  }
+
+  private registerHybrid(cmd: HybridCommand): void {
+    // 1. Prefix olarak kaydet
+    if (!this.prefixHandler) this.prefixHandler = new PrefixHandler();
+    this.prefixHandler.addCommand({
+      name: cmd.name,
+      aliases: cmd.aliases,
+      cooldown: cmd.cooldown,
+      permissions: cmd.permissions as any,
+      run: cmd.run
+    });
+
+    // 2. Slash olarak kaydet
+    if (!this.commandHandler) this.commandHandler = new CommandHandler();
+    const slashBuilder = new SlashCommandBuilder()
+      .setName(cmd.name)
+      .setDescription(cmd.description);
+    
+    if (cmd.options) {
+      for (const opt of cmd.options) {
+        slashBuilder.addOption(opt);
+      }
+    }
+
+    this.commandHandler.addCommand({
+      data: slashBuilder,
+      run: async (ctx) => {
+        // Slash'tan gelen seçenekleri argümanlara dönüştür (isteğe bağlı)
+        const args = ctx.interaction?.options.data.map(o => String(o.value)) || [];
+        await cmd.run(ctx, args);
+      }
+    });
   }
 
   commands(options: CommandHandlerOptions): this {

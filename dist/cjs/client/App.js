@@ -115,10 +115,10 @@ class App extends events_1.EventEmitter {
         });
         return this;
     }
-    login(token) {
+    run(token) {
         this.token = token.startsWith('Bot ') ? token.slice(4) : token;
         if (!this.token || this.token.trim() === '' || this.token === 'TOKEN_BURAYA') {
-            throw new Error('[discordjs-nextgen] Geçerli bir bot tokeni girilmedi. app.login("TOKEN") ile tokeni ver.');
+            throw new Error('[discordjs-nextgen] Geçerli bir bot tokeni girilmedi. app.run("TOKEN") ile tokeni ver.');
         }
         this.rest.setToken(this.token);
         this.gateway = new Gateway_1.Gateway(this.token, {
@@ -134,6 +134,9 @@ class App extends events_1.EventEmitter {
         });
         this.gateway.connect();
         return this;
+    }
+    login(token) {
+        return this.run(token);
     }
     handleDispatch(event, data) {
         switch (event) {

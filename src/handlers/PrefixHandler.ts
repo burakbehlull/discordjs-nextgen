@@ -1,6 +1,7 @@
 import type { Message } from '../structures/Message';
 import { Cooldown } from '../utils/Cooldown';
 import { Permission, type PermissionName } from '../utils/Permission';
+import { Context } from '../structures/Context';
 
 export interface PrefixCommand {
   name: string;
@@ -8,7 +9,7 @@ export interface PrefixCommand {
   aliases?: string[];
   cooldown?: number;
   permissions?: PermissionName[];
-  run: (message: Message, args: string[]) => Promise<void> | void;
+  run: (ctx: Context, args: string[]) => Promise<void> | void;
 }
 
 export interface PrefixOptions {
@@ -82,11 +83,12 @@ export class PrefixHandler {
 
     cooldown?.set(message.author.id);
 
+    const ctx = new Context(message, args);
     try {
-      await cmd.run(message, args);
+      await cmd.run(ctx, args);
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
-      await message.reply(`Komut çalıştırılırken hata oluştu: \`${error}\``).catch(() => null);
+      await ctx.reply(`Komut çalıştırılırken hata oluştu: \`${error}\``).catch(() => null);
     }
   }
 }
