@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CommandHandler = void 0;
-const Context_1 = require("../structures/Context");
+const Context_js_1 = require("../structures/Context.js");
 class CommandHandler {
     constructor(options = {}) {
         this.commands = new Map();
@@ -24,7 +24,7 @@ class CommandHandler {
         const cmd = this.commands.get(interaction.commandName);
         if (!cmd)
             return;
-        const ctx = new Context_1.Context(interaction);
+        const ctx = new Context_js_1.Context(interaction);
         try {
             await cmd.run(ctx);
         }

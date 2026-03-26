@@ -1,14 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Message = void 0;
-const User_1 = require("./User");
-const Channel_1 = require("./Channel");
+const User_js_1 = require("./User.js");
+const Channel_js_1 = require("./Channel.js");
 class Message {
     constructor(data, rest) {
         this.id = data.id;
         this.channelId = data.channel_id;
         this.guildId = data.guild_id ?? null;
-        this.author = new User_1.User(data.author);
+        this.author = new User_js_1.User(data.author);
         this.content = data.content;
         this.createdAt = new Date(data.timestamp);
         this.editedAt = data.edited_timestamp ? new Date(data.edited_timestamp) : null;
@@ -29,7 +29,7 @@ class Message {
         return this.member?.permissions ?? null;
     }
     get channel() {
-        return new Channel_1.Channel({ id: this.channelId, type: 0, guild_id: this.guildId ?? undefined }, this.rest);
+        return new Channel_js_1.Channel({ id: this.channelId, type: 0, guild_id: this.guildId ?? undefined }, this.rest);
     }
     async reply(options) {
         const payload = typeof options === 'string'
@@ -58,18 +58,6 @@ class Message {
     }
     async delete(reason) {
         await this.rest.delete(`/channels/${this.channelId}/messages/${this.id}`, reason);
-    }
-    async pin(reason) {
-        await this.rest.request(`/channels/${this.channelId}/pins/${this.id}`, {
-            method: 'PUT',
-            reason,
-        });
-    }
-    async unpin(reason) {
-        await this.rest.delete(`/channels/${this.channelId}/pins/${this.id}`, reason);
-    }
-    async react(emoji) {
-        await this.rest.request(`/channels/${this.channelId}/messages/${this.id}/reactions/${encodeURIComponent(emoji)}/@me`, { method: 'PUT' });
     }
     toString() {
         return this.content;

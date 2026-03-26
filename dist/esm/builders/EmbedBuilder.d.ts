@@ -1,4 +1,4 @@
-import type { RawEmbed } from '../types/raw';
+import type { RawEmbed } from '../types/raw.js';
 export type EmbedField = {
     name: string;
     value: string;

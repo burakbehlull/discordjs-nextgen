@@ -1,4 +1,4 @@
-import type { Context } from '../structures/Context';
+import type { Context } from '../structures/Context.js';
 export type MiddlewareFunction = (ctx: Context, next: () => Promise<void>) => Promise<void> | void;
 export declare class MiddlewareManager {
     private middlewares;

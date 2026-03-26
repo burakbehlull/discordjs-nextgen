@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Guild = void 0;
-const Channel_1 = require("./Channel");
-const User_1 = require("./User");
+const Channel_js_1 = require("./Channel.js");
+const User_js_1 = require("./User.js");
 class Guild {
     constructor(data, rest) {
         this.id = data.id;
@@ -13,7 +13,7 @@ class Guild {
         this.rest = rest;
         this.channels = new Map();
         for (const ch of data.channels ?? []) {
-            this.channels.set(ch.id, new Channel_1.Channel(ch, rest));
+            this.channels.set(ch.id, new Channel_js_1.Channel(ch, rest));
         }
     }
     iconURL(options = {}) {
@@ -24,12 +24,12 @@ class Guild {
     }
     async fetchOwner() {
         const data = await this.rest.get(`/users/${this.ownerId}`);
-        return new User_1.User(data);
+        return new User_js_1.User(data);
     }
     async fetchMember(userId) {
         const data = await this.rest.get(`/guilds/${this.id}/members/${userId}`);
         return {
-            user: new User_1.User(data.user),
+            user: new User_js_1.User(data.user),
             nick: data.nick ?? null,
             roles: data.roles,
         };
@@ -62,7 +62,7 @@ class Guild {
             },
             reason,
         });
-        return new Channel_1.Channel(data, this.rest);
+        return new Channel_js_1.Channel(data, this.rest);
     }
     toString() {
         return this.name;

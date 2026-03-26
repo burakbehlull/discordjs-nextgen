@@ -1,6 +1,6 @@
-import { Cooldown } from '../utils/Cooldown';
-import { Permission } from '../utils/Permission';
-import { Context } from '../structures/Context';
+import { Cooldown } from '../utils/Cooldown.js';
+import { Permission } from '../utils/Permission.js';
+import { Context } from '../structures/Context.js';
 export class PrefixHandler {
     constructor(options = {}) {
         this.commands = new Map();

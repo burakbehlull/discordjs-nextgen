@@ -1,9 +1,9 @@
-import type { RESTClient } from '../rest/RESTClient';
-import type { RawMessage } from '../types/raw';
-import { User } from './User';
-import { Channel } from './Channel';
-import type { EmbedBuilder } from '../builders/EmbedBuilder';
-import type { ActionRowBuilder } from '../builders/ButtonBuilder';
+import type { RESTClient } from '../rest/RESTClient.js';
+import type { RawMessage } from '../types/raw.js';
+import { User } from './User.js';
+import { Channel } from './Channel.js';
+import type { EmbedBuilder } from '../builders/EmbedBuilder.js';
+import type { ActionRowBuilder } from '../builders/ButtonBuilder.js';
 export interface Member {
     nick: string | null;
     roles: string[];
@@ -34,9 +34,6 @@ export declare class Message {
     reply(options: string | MessageReplyOptions): Promise<Message>;
     edit(options: string | MessageReplyOptions): Promise<Message>;
     delete(reason?: string): Promise<void>;
-    pin(reason?: string): Promise<void>;
-    unpin(reason?: string): Promise<void>;
-    react(emoji: string): Promise<void>;
     toString(): string;
 }
 //# sourceMappingURL=Message.d.ts.map

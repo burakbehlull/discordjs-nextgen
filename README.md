@@ -4,6 +4,8 @@ Basit, hızlı ve modüler bir Discord bot framework'ü. Hem **ESM** hem de **Co
 
 ## 🌟 Neden discordjs-nextgen?
 
+- **TypeScript Desteği**: Tam tip güvenliği ve otomatik tamamlamalar (IntelliSense) ile hatasız geliştirme.
+- **Hibrit Modül**: Hem **ESM** (`import`) hem de **CommonJS** (`require`) projeleriyle %100 uyumlu.
 - **Fluent API**: Zincirleme metodlarla botunuzu saniyeler içinde yapılandırın.
 - **Dinamik Yükleyici**: Komutları ve olayları klasörlerden otomatik olarak yükleyin.
 - **Hibrit Komut Sistemi**: Tek kodla hem Prefix hem Slash komutu oluşturun.

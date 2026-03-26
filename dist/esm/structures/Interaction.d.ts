@@ -1,8 +1,8 @@
-import type { RESTClient } from '../rest/RESTClient';
-import type { RawInteraction } from '../types/raw';
-import { User } from './User';
-import type { EmbedBuilder } from '../builders/EmbedBuilder';
-import type { ActionRowBuilder } from '../builders/ButtonBuilder';
+import type { RESTClient } from '../rest/RESTClient.js';
+import type { RawInteraction } from '../types/raw.js';
+import { User } from './User.js';
+import type { EmbedBuilder } from '../builders/EmbedBuilder.js';
+import type { ActionRowBuilder } from '../builders/ButtonBuilder.js';
 export interface InteractionReplyOptions {
     content?: string;
     embeds?: EmbedBuilder[];
@@ -35,7 +35,6 @@ export declare class Interaction {
     get optionValues(): (string | number | boolean)[];
     reply(options: string | InteractionReplyOptions): Promise<void>;
     deferReply(ephemeral?: boolean): Promise<void>;
-    editReply(options: string | InteractionReplyOptions): Promise<void>;
     followUp(options: string | InteractionReplyOptions): Promise<void>;
     private resolveOptions;
 }

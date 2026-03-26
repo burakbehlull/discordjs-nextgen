@@ -1,19 +1,19 @@
 import { EventEmitter } from 'events';
-import { RESTClient } from '../rest/RESTClient';
-import { Gateway } from '../gateway/Gateway';
-import { Message } from '../structures/Message';
-import { User } from '../structures/User';
-import { Guild } from '../structures/Guild';
-import { Channel } from '../structures/Channel';
-import { Interaction } from '../structures/Interaction';
-import { Logger } from '../utils/Logger';
-import { PrefixHandler } from '../handlers/PrefixHandler';
-import { CommandHandler } from '../handlers/CommandHandler';
-import { SlashCommandBuilder } from '../builders/SlashCommandBuilder';
-import { FileLoader } from '../utils/FileLoader';
-import { MiddlewareManager } from '../utils/MiddlewareManager';
-import { Context } from '../structures/Context';
-import { Intents } from '../types/constants';
+import { RESTClient } from '../rest/RESTClient.js';
+import { Gateway } from '../gateway/Gateway.js';
+import { Message } from '../structures/Message.js';
+import { User } from '../structures/User.js';
+import { Guild } from '../structures/Guild.js';
+import { Channel } from '../structures/Channel.js';
+import { Interaction } from '../structures/Interaction.js';
+import { Logger } from '../utils/Logger.js';
+import { PrefixHandler } from '../handlers/PrefixHandler.js';
+import { CommandHandler } from '../handlers/CommandHandler.js';
+import { SlashCommandBuilder } from '../builders/SlashCommandBuilder.js';
+import { FileLoader } from '../utils/FileLoader.js';
+import { MiddlewareManager } from '../utils/MiddlewareManager.js';
+import { Context } from '../structures/Context.js';
+import { Intents } from '../types/constants.js';
 export class App extends EventEmitter {
     constructor(options = {}) {
         super();

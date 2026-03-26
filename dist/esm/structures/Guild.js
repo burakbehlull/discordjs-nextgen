@@ -1,5 +1,5 @@
-import { Channel } from './Channel';
-import { User } from './User';
+import { Channel } from './Channel.js';
+import { User } from './User.js';
 export class Guild {
     constructor(data, rest) {
         this.id = data.id;

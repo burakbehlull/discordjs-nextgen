@@ -1,4 +1,4 @@
-import { Context } from '../structures/Context';
+import { Context } from '../structures/Context.js';
 export class CommandHandler {
     constructor(options = {}) {
         this.commands = new Map();

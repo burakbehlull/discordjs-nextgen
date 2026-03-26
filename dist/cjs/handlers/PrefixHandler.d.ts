@@ -1,6 +1,6 @@
-import type { Message } from '../structures/Message';
-import { type PermissionName } from '../utils/Permission';
-import { Context } from '../structures/Context';
+import type { Message } from '../structures/Message.js';
+import { type PermissionName } from '../utils/Permission.js';
+import { Context } from '../structures/Context.js';
 export interface PrefixCommand {
     name: string;
     description?: string;

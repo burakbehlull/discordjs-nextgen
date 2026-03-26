@@ -1,15 +1,15 @@
 import { EventEmitter } from 'events';
-import { RESTClient } from '../rest/RESTClient';
-import { Message } from '../structures/Message';
-import { User } from '../structures/User';
-import { Guild } from '../structures/Guild';
-import { Channel } from '../structures/Channel';
-import { Interaction } from '../structures/Interaction';
-import { type PrefixOptions } from '../handlers/PrefixHandler';
-import { type CommandHandlerOptions } from '../handlers/CommandHandler';
-import { SlashCommandBuilder, type SlashCommandOption } from '../builders/SlashCommandBuilder';
-import { type MiddlewareFunction } from '../utils/MiddlewareManager';
-import { Context } from '../structures/Context';
+import { RESTClient } from '../rest/RESTClient.js';
+import { Message } from '../structures/Message.js';
+import { User } from '../structures/User.js';
+import { Guild } from '../structures/Guild.js';
+import { Channel } from '../structures/Channel.js';
+import { Interaction } from '../structures/Interaction.js';
+import { type PrefixOptions } from '../handlers/PrefixHandler.js';
+import { type CommandHandlerOptions } from '../handlers/CommandHandler.js';
+import { SlashCommandBuilder, type SlashCommandOption } from '../builders/SlashCommandBuilder.js';
+import { type MiddlewareFunction } from '../utils/MiddlewareManager.js';
+import { Context } from '../structures/Context.js';
 export interface HybridCommand {
     name: string;
     description: string;
@@ -19,8 +19,8 @@ export interface HybridCommand {
     options?: SlashCommandOption[];
     run: (ctx: Context, args: string[]) => Promise<void> | void;
 }
-import type { PresenceData } from '../types/raw';
-import { Intents } from '../types/constants';
+import type { PresenceData } from '../types/raw.js';
+import { Intents } from '../types/constants.js';
 export interface AppOptions {
     intents?: number | (keyof typeof Intents)[];
     presence?: PresenceData;

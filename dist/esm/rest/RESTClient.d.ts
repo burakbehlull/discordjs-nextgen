@@ -11,9 +11,8 @@ export declare class RESTClient {
     setToken(token: string): void;
     request<T = unknown>(endpoint: string, options?: RequestOptions): Promise<T>;
     get<T = unknown>(endpoint: string): Promise<T>;
-    post<T = unknown>(endpoint: string, body?: Record<string, unknown>): Promise<T>;
-    patch<T = unknown>(endpoint: string, body?: Record<string, unknown>, reason?: string): Promise<T>;
-    put<T = unknown>(endpoint: string, body?: Record<string, unknown>): Promise<T>;
+    post<T = unknown>(endpoint: string, body?: Record<string, unknown> | unknown[]): Promise<T>;
+    patch<T = unknown>(endpoint: string, body?: Record<string, unknown> | unknown[], reason?: string): Promise<T>;
     delete<T = unknown>(endpoint: string, reason?: string): Promise<T>;
 }
 //# sourceMappingURL=RESTClient.d.ts.map

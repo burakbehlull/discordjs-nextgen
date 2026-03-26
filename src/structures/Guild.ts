@@ -1,7 +1,7 @@
-import type { RESTClient } from '../rest/RESTClient';
-import type { RawGuild, RawUser, RawChannel } from '../types/raw';
-import { Channel } from './Channel';
-import { User } from './User';
+import type { RESTClient } from '../rest/RESTClient.js';
+import type { RawGuild, RawUser, RawChannel } from '../types/raw.js';
+import { Channel } from './Channel.js';
+import { User } from './User.js';
 
 export class Guild {
   readonly id: string;

@@ -1,7 +1,7 @@
-import type { Message } from '../structures/Message';
-import { Cooldown } from '../utils/Cooldown';
-import { Permission, type PermissionName } from '../utils/Permission';
-import { Context } from '../structures/Context';
+import type { Message } from '../structures/Message.js';
+import { Cooldown } from '../utils/Cooldown.js';
+import { Permission, type PermissionName } from '../utils/Permission.js';
+import { Context } from '../structures/Context.js';
 
 export interface PrefixCommand {
   name: string;

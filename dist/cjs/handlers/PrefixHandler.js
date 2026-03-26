@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PrefixHandler = void 0;
-const Cooldown_1 = require("../utils/Cooldown");
-const Permission_1 = require("../utils/Permission");
-const Context_1 = require("../structures/Context");
+const Cooldown_js_1 = require("../utils/Cooldown.js");
+const Permission_js_1 = require("../utils/Permission.js");
+const Context_js_1 = require("../structures/Context.js");
 class PrefixHandler {
     constructor(options = {}) {
         this.commands = new Map();
@@ -22,7 +22,7 @@ class PrefixHandler {
             this.commands.set(alias.toLowerCase(), cmd);
         }
         if (cmd.cooldown) {
-            this.cooldowns.set(cmd.name.toLowerCase(), new Cooldown_1.Cooldown(cmd.cooldown));
+            this.cooldowns.set(cmd.name.toLowerCase(), new Cooldown_js_1.Cooldown(cmd.cooldown));
         }
     }
     async handle(message) {
@@ -46,7 +46,7 @@ class PrefixHandler {
             return;
         if (cmd.permissions && cmd.permissions.length > 0) {
             const memberPermissions = message.memberPermissions;
-            if (!memberPermissions || !Permission_1.Permission.hasAll(memberPermissions, cmd.permissions)) {
+            if (!memberPermissions || !Permission_js_1.Permission.hasAll(memberPermissions, cmd.permissions)) {
                 await message.reply(`Bu komutu kullanmak için yetkin yok: \`${cmd.permissions.join(', ')}\``);
                 return;
             }
@@ -58,7 +58,7 @@ class PrefixHandler {
             return;
         }
         cooldown?.set(message.author.id);
-        const ctx = new Context_1.Context(message, args);
+        const ctx = new Context_js_1.Context(message, args);
         try {
             await cmd.run(ctx, args);
         }

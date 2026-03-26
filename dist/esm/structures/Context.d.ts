@@ -1,10 +1,10 @@
-import type { Message } from '../structures/Message';
-import type { Interaction } from '../structures/Interaction';
-import type { User } from '../structures/User';
-import type { Guild } from '../structures/Guild';
-import type { Channel } from '../structures/Channel';
-import type { MessageReplyOptions } from '../structures/Message';
-import type { InteractionReplyOptions } from '../structures/Interaction';
+import type { Message } from '../structures/Message.js';
+import type { Interaction } from '../structures/Interaction.js';
+import type { User } from '../structures/User.js';
+import type { Guild } from '../structures/Guild.js';
+import type { Channel } from '../structures/Channel.js';
+import type { MessageReplyOptions } from '../structures/Message.js';
+import type { InteractionReplyOptions } from '../structures/Interaction.js';
 export declare class Context {
     private source;
     readonly user: User;

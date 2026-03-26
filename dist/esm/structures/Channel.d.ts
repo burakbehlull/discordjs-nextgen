@@ -1,6 +1,6 @@
-import type { RESTClient } from '../rest/RESTClient';
-import { EmbedBuilder } from '../builders/EmbedBuilder';
-import type { ActionRowBuilder } from '../builders/ButtonBuilder';
+import type { RESTClient } from '../rest/RESTClient.js';
+import { EmbedBuilder } from '../builders/EmbedBuilder.js';
+import type { ActionRowBuilder } from '../builders/ButtonBuilder.js';
 export interface MessageSendOptions {
     content?: string;
     embeds?: EmbedBuilder[];

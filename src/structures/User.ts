@@ -1,4 +1,4 @@
-import type { RawUser } from '../types/raw';
+import type { RawUser } from '../types/raw.js';
 
 export class User {
   readonly id: string;

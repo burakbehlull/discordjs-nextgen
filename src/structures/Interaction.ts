@@ -1,8 +1,8 @@
-import type { RESTClient } from '../rest/RESTClient';
-import type { RawInteraction } from '../types/raw';
-import { User } from './User';
-import type { EmbedBuilder } from '../builders/EmbedBuilder';
-import type { ActionRowBuilder } from '../builders/ButtonBuilder';
+import type { RESTClient } from '../rest/RESTClient.js';
+import type { RawInteraction } from '../types/raw.js';
+import { User } from './User.js';
+import type { EmbedBuilder } from '../builders/EmbedBuilder.js';
+import type { ActionRowBuilder } from '../builders/ButtonBuilder.js';
 
 export interface InteractionReplyOptions {
   content?: string;
@@ -98,36 +98,27 @@ export class Interaction {
     if (this._replied) throw new Error('Interaction already replied');
     await this.rest.post(`/interactions/${this.id}/${this.token}/callback`, {
       type: 5,
-      data: ephemeral ? { flags: 64 } : {},
+      data: { flags: ephemeral ? 64 : 0 },
     });
-    this._replied = true;
     this._deferred = true;
-  }
-
-  async editReply(options: string | InteractionReplyOptions): Promise<void> {
-    if (!this._replied) throw new Error('Interaction not yet replied');
-    const payload = this.resolveOptions(options);
-    await this.rest.patch(
-      `/webhooks/${this.applicationId}/${this.token}/messages/@original`,
-      payload as Record<string, unknown>
-    );
+    this._replied = true;
   }
 
   async followUp(options: string | InteractionReplyOptions): Promise<void> {
     const payload = this.resolveOptions(options);
-    await this.rest.post(
-      `/webhooks/${this.applicationId}/${this.token}`,
-      payload as Record<string, unknown>
-    );
+    await this.rest.post(`/webhooks/${this.applicationId}/${this.token}`, payload);
   }
 
-  private resolveOptions(options: string | InteractionReplyOptions): Record<string, unknown> {
-    if (typeof options === 'string') return { content: options };
-    const payload: Record<string, unknown> = {};
-    if (options.content) payload.content = options.content;
-    if (options.embeds) payload.embeds = options.embeds.map((e) => e.toJSON());
-    if (options.components) payload.components = options.components.map((r) => r.toJSON());
-    if (options.ephemeral) payload.flags = 64;
-    return payload;
+  private resolveOptions(options: string | InteractionReplyOptions): any {
+    if (typeof options === 'string') {
+      return { content: options };
+    }
+    const { embeds, components, ephemeral, ...rest } = options;
+    return {
+      ...rest,
+      embeds: embeds?.map((e) => e.toJSON()),
+      components: components?.map((c) => c.toJSON()),
+      flags: ephemeral ? 64 : 0,
+    };
   }
 }

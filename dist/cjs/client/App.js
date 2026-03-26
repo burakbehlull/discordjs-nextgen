@@ -2,21 +2,21 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.App = void 0;
 const events_1 = require("events");
-const RESTClient_1 = require("../rest/RESTClient");
-const Gateway_1 = require("../gateway/Gateway");
-const Message_1 = require("../structures/Message");
-const User_1 = require("../structures/User");
-const Guild_1 = require("../structures/Guild");
-const Channel_1 = require("../structures/Channel");
-const Interaction_1 = require("../structures/Interaction");
-const Logger_1 = require("../utils/Logger");
-const PrefixHandler_1 = require("../handlers/PrefixHandler");
-const CommandHandler_1 = require("../handlers/CommandHandler");
-const SlashCommandBuilder_1 = require("../builders/SlashCommandBuilder");
-const FileLoader_1 = require("../utils/FileLoader");
-const MiddlewareManager_1 = require("../utils/MiddlewareManager");
-const Context_1 = require("../structures/Context");
-const constants_1 = require("../types/constants");
+const RESTClient_js_1 = require("../rest/RESTClient.js");
+const Gateway_js_1 = require("../gateway/Gateway.js");
+const Message_js_1 = require("../structures/Message.js");
+const User_js_1 = require("../structures/User.js");
+const Guild_js_1 = require("../structures/Guild.js");
+const Channel_js_1 = require("../structures/Channel.js");
+const Interaction_js_1 = require("../structures/Interaction.js");
+const Logger_js_1 = require("../utils/Logger.js");
+const PrefixHandler_js_1 = require("../handlers/PrefixHandler.js");
+const CommandHandler_js_1 = require("../handlers/CommandHandler.js");
+const SlashCommandBuilder_js_1 = require("../builders/SlashCommandBuilder.js");
+const FileLoader_js_1 = require("../utils/FileLoader.js");
+const MiddlewareManager_js_1 = require("../utils/MiddlewareManager.js");
+const Context_js_1 = require("../structures/Context.js");
+const constants_js_1 = require("../types/constants.js");
 class App extends events_1.EventEmitter {
     constructor(options = {}) {
         super();
@@ -28,38 +28,38 @@ class App extends events_1.EventEmitter {
         this.token = null;
         this.prefixHandler = null;
         this.commandHandler = null;
-        this.middlewareManager = new MiddlewareManager_1.MiddlewareManager();
+        this.middlewareManager = new MiddlewareManager_js_1.MiddlewareManager();
         this.user = null;
-        this.rest = new RESTClient_1.RESTClient('');
+        this.rest = new RESTClient_js_1.RESTClient('');
     }
     resolveIntents() {
-        const { intents = constants_1.Intents.ALL } = this.options;
+        const { intents = constants_js_1.Intents.ALL } = this.options;
         if (typeof intents === 'number')
             return intents;
-        return intents.reduce((acc, key) => acc | constants_1.Intents[key], 0);
+        return intents.reduce((acc, key) => acc | constants_js_1.Intents[key], 0);
     }
     prefix(options) {
         if (typeof options === 'string' || (typeof options === 'object' && 'folder' in options)) {
             const folderPath = typeof options === 'string' ? options : options.folder;
             const prefixOptions = typeof options === 'object' ? options : {};
             if (!this.prefixHandler)
-                this.prefixHandler = new PrefixHandler_1.PrefixHandler(prefixOptions);
-            FileLoader_1.FileLoader.loadFiles(folderPath).then((cmds) => {
+                this.prefixHandler = new PrefixHandler_js_1.PrefixHandler(prefixOptions);
+            FileLoader_js_1.FileLoader.loadFiles(folderPath).then((cmds) => {
                 for (const cmd of cmds) {
                     this.prefixHandler.addCommand(cmd);
                 }
-                Logger_1.Logger.success(`${cmds.length} prefix komutu [${folderPath}] klasöründen yüklendi.`);
+                Logger_js_1.Logger.success(`${cmds.length} prefix komutu [${folderPath}] klasöründen yüklendi.`);
             });
         }
         else {
-            this.prefixHandler = new PrefixHandler_1.PrefixHandler(options);
+            this.prefixHandler = new PrefixHandler_js_1.PrefixHandler(options);
         }
         this.on('messageCreate', (message) => {
-            const ctx = new Context_1.Context(message);
+            const ctx = new Context_js_1.Context(message);
             this.middlewareManager.run(ctx, async () => {
                 await this.prefixHandler.handle(message);
             }).catch((err) => {
-                Logger_1.Logger.error(`Prefix handler hatası: ${err.message}`);
+                Logger_js_1.Logger.error(`Prefix handler hatası: ${err.message}`);
             });
         });
         return this;
@@ -69,12 +69,12 @@ class App extends events_1.EventEmitter {
             const folderPath = typeof options === 'string' ? options : options.folder;
             const guildId = typeof options === 'object' ? options.guildId : undefined;
             if (!this.commandHandler)
-                this.commandHandler = new CommandHandler_1.CommandHandler({ guildId });
-            FileLoader_1.FileLoader.loadFiles(folderPath).then((cmds) => {
+                this.commandHandler = new CommandHandler_js_1.CommandHandler({ guildId });
+            FileLoader_js_1.FileLoader.loadFiles(folderPath).then((cmds) => {
                 for (const cmd of cmds) {
                     this.commandHandler.addCommand(cmd);
                 }
-                Logger_1.Logger.success(`${cmds.length} slash komutu [${folderPath}] klasöründen yüklendi.`);
+                Logger_js_1.Logger.success(`${cmds.length} slash komutu [${folderPath}] klasöründen yüklendi.`);
                 // Eğer bot hazırsa hemen kaydet, değilse ready beklet
                 if (this.user) {
                     this.registerCommands(this.commandHandler.getBuilders(), guildId);
@@ -82,27 +82,27 @@ class App extends events_1.EventEmitter {
             });
         }
         else {
-            this.commandHandler = new CommandHandler_1.CommandHandler(options);
+            this.commandHandler = new CommandHandler_js_1.CommandHandler(options);
         }
         this.once('ready', async () => {
             if (this.commandHandler) {
                 try {
                     await this.registerCommands(this.commandHandler.getBuilders(), options.guildId);
-                    Logger_1.Logger.success(`${this.commandHandler.commands.size} slash komut kaydedildi.`);
+                    Logger_js_1.Logger.success(`${this.commandHandler.commands.size} slash komut kaydedildi.`);
                 }
                 catch (err) {
                     const error = err instanceof Error ? err.message : String(err);
-                    Logger_1.Logger.error(`Slash komutlar kaydedilemedi: ${error}`);
+                    Logger_js_1.Logger.error(`Slash komutlar kaydedilemedi: ${error}`);
                 }
             }
         });
         this.on('interactionCreate', (interaction) => {
             if (this.commandHandler) {
-                const ctx = new Context_1.Context(interaction);
+                const ctx = new Context_js_1.Context(interaction);
                 this.middlewareManager.run(ctx, async () => {
                     await this.commandHandler.handle(interaction);
                 }).catch((err) => {
-                    Logger_1.Logger.error(`Command handler hatası: ${err.message}`);
+                    Logger_js_1.Logger.error(`Command handler hatası: ${err.message}`);
                 });
             }
         });
@@ -120,11 +120,11 @@ class App extends events_1.EventEmitter {
     command(options) {
         if (typeof options === 'string' || (typeof options === 'object' && 'folder' in options)) {
             const folderPath = typeof options === 'string' ? options : options.folder;
-            FileLoader_1.FileLoader.loadFiles(folderPath).then((cmds) => {
+            FileLoader_js_1.FileLoader.loadFiles(folderPath).then((cmds) => {
                 for (const cmd of cmds) {
                     this.registerHybrid(cmd);
                 }
-                Logger_1.Logger.success(`${cmds.length} hybrid komutu [${folderPath}] klasöründen yüklendi.`);
+                Logger_js_1.Logger.success(`${cmds.length} hybrid komutu [${folderPath}] klasöründen yüklendi.`);
             });
         }
         else {
@@ -135,7 +135,7 @@ class App extends events_1.EventEmitter {
     registerHybrid(cmd) {
         // 1. Prefix olarak kaydet
         if (!this.prefixHandler)
-            this.prefixHandler = new PrefixHandler_1.PrefixHandler();
+            this.prefixHandler = new PrefixHandler_js_1.PrefixHandler();
         this.prefixHandler.addCommand({
             name: cmd.name,
             aliases: cmd.aliases,
@@ -145,8 +145,8 @@ class App extends events_1.EventEmitter {
         });
         // 2. Slash olarak kaydet
         if (!this.commandHandler)
-            this.commandHandler = new CommandHandler_1.CommandHandler();
-        const slashBuilder = new SlashCommandBuilder_1.SlashCommandBuilder()
+            this.commandHandler = new CommandHandler_js_1.CommandHandler();
+        const slashBuilder = new SlashCommandBuilder_js_1.SlashCommandBuilder()
             .setName(cmd.name)
             .setDescription(cmd.description);
         if (cmd.options) {
@@ -167,7 +167,7 @@ class App extends events_1.EventEmitter {
         return this.slash(options);
     }
     events(folderPath) {
-        FileLoader_1.FileLoader.loadFiles(folderPath).then((events) => {
+        FileLoader_js_1.FileLoader.loadFiles(folderPath).then((events) => {
             for (const event of events) {
                 if (event.once) {
                     this.once(event.name, (...args) => event.run(...args));
@@ -176,7 +176,7 @@ class App extends events_1.EventEmitter {
                     this.on(event.name, (...args) => event.run(...args));
                 }
             }
-            Logger_1.Logger.success(`${events.length} event [${folderPath}] klasöründen yüklendi.`);
+            Logger_js_1.Logger.success(`${events.length} event [${folderPath}] klasöründen yüklendi.`);
         });
         return this;
     }
@@ -186,7 +186,7 @@ class App extends events_1.EventEmitter {
             throw new Error('[discordjs-nextgen] Geçerli bir bot tokeni girilmedi. app.run("TOKEN") ile tokeni ver.');
         }
         this.rest.setToken(this.token);
-        this.gateway = new Gateway_1.Gateway(this.token, {
+        this.gateway = new Gateway_js_1.Gateway(this.token, {
             intents: this.resolveIntents(),
             presence: this.options.presence,
         });
@@ -194,7 +194,7 @@ class App extends events_1.EventEmitter {
             this.handleDispatch(event, data);
         });
         this.gateway.on('error', (err) => {
-            Logger_1.Logger.error(err.message);
+            Logger_js_1.Logger.error(err.message);
             this.emit('error', err);
         });
         this.gateway.connect();
@@ -207,18 +207,18 @@ class App extends events_1.EventEmitter {
         switch (event) {
             case 'READY': {
                 const d = data;
-                this.user = new User_1.User(d.user);
-                Logger_1.Logger.success(`${this.user.tag} olarak giriş yapıldı.`);
+                this.user = new User_js_1.User(d.user);
+                Logger_js_1.Logger.success(`${this.user.tag} olarak giriş yapıldı.`);
                 this.emit('ready', this.user);
                 break;
             }
             case 'MESSAGE_CREATE': {
-                const msg = new Message_1.Message(data, this.rest);
+                const msg = new Message_js_1.Message(data, this.rest);
                 this.emit('messageCreate', msg);
                 break;
             }
             case 'MESSAGE_UPDATE': {
-                const msg = new Message_1.Message(data, this.rest);
+                const msg = new Message_js_1.Message(data, this.rest);
                 this.emit('messageUpdate', msg);
                 break;
             }
@@ -232,7 +232,7 @@ class App extends events_1.EventEmitter {
                 break;
             }
             case 'GUILD_CREATE': {
-                const guild = new Guild_1.Guild(data, this.rest);
+                const guild = new Guild_js_1.Guild(data, this.rest);
                 this.guilds.set(guild.id, guild);
                 for (const [id, ch] of guild.channels) {
                     this.channels.set(id, ch);
@@ -247,7 +247,7 @@ class App extends events_1.EventEmitter {
                 break;
             }
             case 'INTERACTION_CREATE': {
-                const interaction = new Interaction_1.Interaction(data, this.rest);
+                const interaction = new Interaction_js_1.Interaction(data, this.rest);
                 this.emit('interactionCreate', interaction);
                 break;
             }
@@ -255,19 +255,19 @@ class App extends events_1.EventEmitter {
     }
     async fetchUser(userId) {
         const data = await this.rest.get(`/users/${userId}`);
-        const user = new User_1.User(data);
+        const user = new User_js_1.User(data);
         this.users.set(user.id, user);
         return user;
     }
     async fetchChannel(channelId) {
         const data = await this.rest.get(`/channels/${channelId}`);
-        const channel = new Channel_1.Channel(data, this.rest);
+        const channel = new Channel_js_1.Channel(data, this.rest);
         this.channels.set(channel.id, channel);
         return channel;
     }
     async fetchGuild(guildId) {
         const data = await this.rest.get(`/guilds/${guildId}?with_counts=true`);
-        const guild = new Guild_1.Guild(data, this.rest);
+        const guild = new Guild_js_1.Guild(data, this.rest);
         this.guilds.set(guild.id, guild);
         return guild;
     }

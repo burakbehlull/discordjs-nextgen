@@ -1,7 +1,7 @@
-import type { RESTClient } from '../rest/RESTClient';
-import type { RawEmbed, RawChannel } from '../types/raw';
-import { EmbedBuilder } from '../builders/EmbedBuilder';
-import type { ActionRowBuilder } from '../builders/ButtonBuilder';
+import type { RESTClient } from '../rest/RESTClient.js';
+import type { RawEmbed, RawChannel } from '../types/raw.js';
+import { EmbedBuilder } from '../builders/EmbedBuilder.js';
+import type { ActionRowBuilder } from '../builders/ButtonBuilder.js';
 
 export interface MessageSendOptions {
   content?: string;

@@ -1,18 +1,18 @@
 import { EventEmitter } from 'events';
-import { RESTClient } from '../rest/RESTClient';
-import { Gateway } from '../gateway/Gateway';
-import { Message } from '../structures/Message';
-import { User } from '../structures/User';
-import { Guild } from '../structures/Guild';
-import { Channel } from '../structures/Channel';
-import { Interaction } from '../structures/Interaction';
-import { Logger } from '../utils/Logger';
-import { PrefixHandler, type PrefixOptions, type PrefixCommand } from '../handlers/PrefixHandler';
-import { CommandHandler, type CommandHandlerOptions, type SlashCommand } from '../handlers/CommandHandler';
-import { SlashCommandBuilder, type SlashCommandOption } from '../builders/SlashCommandBuilder';
-import { FileLoader } from '../utils/FileLoader';
-import { MiddlewareManager, type MiddlewareFunction } from '../utils/MiddlewareManager';
-import { Context } from '../structures/Context';
+import { RESTClient } from '../rest/RESTClient.js';
+import { Gateway } from '../gateway/Gateway.js';
+import { Message } from '../structures/Message.js';
+import { User } from '../structures/User.js';
+import { Guild } from '../structures/Guild.js';
+import { Channel } from '../structures/Channel.js';
+import { Interaction } from '../structures/Interaction.js';
+import { Logger } from '../utils/Logger.js';
+import { PrefixHandler, type PrefixOptions, type PrefixCommand } from '../handlers/PrefixHandler.js';
+import { CommandHandler, type CommandHandlerOptions, type SlashCommand } from '../handlers/CommandHandler.js';
+import { SlashCommandBuilder, type SlashCommandOption } from '../builders/SlashCommandBuilder.js';
+import { FileLoader } from '../utils/FileLoader.js';
+import { MiddlewareManager, type MiddlewareFunction } from '../utils/MiddlewareManager.js';
+import { Context } from '../structures/Context.js';
 import path from 'path';
 
 export interface HybridCommand {
@@ -24,8 +24,8 @@ export interface HybridCommand {
   options?: SlashCommandOption[];
   run: (ctx: Context, args: string[]) => Promise<void> | void;
 }
-import type { PresenceData, RawMessage, RawGuild, RawInteraction, RawUser, RawChannel } from '../types/raw';
-import { Intents } from '../types/constants';
+import type { PresenceData, RawMessage, RawGuild, RawInteraction, RawUser, RawChannel } from '../types/raw.js';
+import { Intents } from '../types/constants.js';
 
 export interface AppOptions {
   intents?: number | (keyof typeof Intents)[];

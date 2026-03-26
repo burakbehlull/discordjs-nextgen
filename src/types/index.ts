@@ -1,4 +1,4 @@
-export { Intents, GatewayEvents, GatewayOpcodes, API_BASE, GATEWAY_URL } from './constants';
+export { Intents, GatewayEvents, GatewayOpcodes, API_BASE, GATEWAY_URL } from './constants.js';
 export type {
   RawUser,
   RawChannel,
@@ -12,4 +12,4 @@ export type {
   RawInteractionOption,
   PresenceData,
   ActivityType,
-} from './raw';
+} from './raw.js';

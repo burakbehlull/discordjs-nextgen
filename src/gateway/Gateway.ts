@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
 import { EventEmitter } from 'events';
-import { GATEWAY_URL, GatewayOpcodes } from '../types/constants';
-import type { PresenceData } from '../types/raw';
+import { GATEWAY_URL, GatewayOpcodes } from '../types/constants.js';
+import type { PresenceData } from '../types/raw.js';
 
 export interface GatewayOptions {
   intents: number;
@@ -103,80 +103,79 @@ export class Gateway extends EventEmitter {
 
       case GatewayOpcodes.INVALID_SESSION: {
         const resumable = d as boolean;
-        if (!resumable) {
+        if (resumable) {
+          this.reconnect();
+        } else {
           this.sessionId = null;
           this.resumeUrl = null;
+          this.reconnect();
         }
-        setTimeout(() => this.reconnect(), 1000 + Math.random() * 4000);
         break;
       }
 
       case GatewayOpcodes.DISPATCH:
-        if (t) this.handleEvent(t, d);
+        if (t === 'READY') {
+          const data = d as { session_id: string; resume_gateway_url: string };
+          this.sessionId = data.session_id;
+          this.resumeUrl = data.resume_gateway_url;
+        }
+        this.emit('dispatch', t!, d);
         break;
     }
   }
 
-  private handleEvent(event: string, data: unknown): void {
-    if (event === 'READY') {
-      const d = data as { session_id: string; resume_gateway_url: string; user: unknown };
-      this.sessionId = d.session_id;
-      this.resumeUrl = d.resume_gateway_url + '?v=10&encoding=json';
-    }
-    this.emit('dispatch', event, data);
-  }
-
   private identify(): void {
-    this.send({
-      op: GatewayOpcodes.IDENTIFY,
-      d: {
-        token: this.token,
-        intents: this.options.intents,
-        properties: {
-          os: process.platform,
-          browser: 'discordjs-nextgen',
-          device: 'discordjs-nextgen',
-        },
-        presence: this.options.presence,
+    this.send(GatewayOpcodes.IDENTIFY, {
+      token: this.token,
+      intents: this.options.intents,
+      properties: {
+        os: process.platform,
+        browser: 'discordjs-nextgen',
+        device: 'discordjs-nextgen',
       },
+      presence: this.options.presence,
     });
   }
 
   private resume(): void {
-    this.send({
-      op: GatewayOpcodes.RESUME,
-      d: {
-        token: this.token,
-        session_id: this.sessionId,
-        seq: this.sequence,
-      },
+    this.send(GatewayOpcodes.RESUME, {
+      token: this.token,
+      session_id: this.sessionId,
+      seq: this.sequence,
     });
   }
 
   private startHeartbeat(interval: number): void {
     if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
-    setTimeout(() => {
+    this.heartbeatInterval = setInterval(() => {
+      if (!this.lastHeartbeatAck) {
+        this.reconnect();
+        return;
+      }
+      this.lastHeartbeatAck = false;
       this.sendHeartbeat();
-      this.heartbeatInterval = setInterval(() => {
-        if (!this.lastHeartbeatAck) {
-          this.reconnect();
-          return;
-        }
-        this.lastHeartbeatAck = false;
-        this.sendHeartbeat();
-      }, interval);
-    }, interval * Math.random());
+    }, interval);
   }
 
   private sendHeartbeat(): void {
-    this.send({ op: GatewayOpcodes.HEARTBEAT, d: this.sequence });
+    this.send(GatewayOpcodes.HEARTBEAT, this.sequence);
   }
 
   private reconnect(): void {
     if (this.reconnecting) return;
     this.reconnecting = true;
-    this.cleanup();
+    this.destroy();
     this.connect();
+  }
+
+  private send(op: number, d: unknown): void {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ op, d }));
+    }
+  }
+
+  private shouldResume(code: number): boolean {
+    return code !== 1000 && code !== 4007 && code !== 4009;
   }
 
   private cleanup(): void {
@@ -184,41 +183,19 @@ export class Gateway extends EventEmitter {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = null;
     }
-    if (this.ws) {
-      this.ws.removeAllListeners();
-      if (this.ws.readyState === WebSocket.OPEN) {
-        this.ws.close();
-      }
-      this.ws = null;
-    }
-  }
-
-  private shouldResume(code: number): boolean {
-    const nonResumableCodes = [4004, 4010, 4011, 4012, 4013, 4014];
-    return !nonResumableCodes.includes(code);
-  }
-
-  send(payload: unknown): void {
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(payload));
-    }
   }
 
   updatePresence(presence: PresenceData): void {
-    this.send({
-      op: GatewayOpcodes.PRESENCE_UPDATE,
-      d: {
-        since: presence.status === 'idle' ? Date.now() : null,
-        activities: presence.activities ?? [],
-        status: presence.status ?? 'online',
-        afk: presence.afk ?? false,
-      },
-    });
+    this.options.presence = presence;
+    this.send(GatewayOpcodes.PRESENCE_UPDATE, presence);
   }
 
   destroy(): void {
-    this.sessionId = null;
-    this.resumeUrl = null;
     this.cleanup();
+    if (this.ws) {
+      this.ws.removeAllListeners();
+      this.ws.close();
+      this.ws = null;
+    }
   }
 }

@@ -1,5 +1,5 @@
-import { User } from './User';
-import { Channel } from './Channel';
+import { User } from './User.js';
+import { Channel } from './Channel.js';
 export class Message {
     constructor(data, rest) {
         this.id = data.id;
@@ -55,18 +55,6 @@ export class Message {
     }
     async delete(reason) {
         await this.rest.delete(`/channels/${this.channelId}/messages/${this.id}`, reason);
-    }
-    async pin(reason) {
-        await this.rest.request(`/channels/${this.channelId}/pins/${this.id}`, {
-            method: 'PUT',
-            reason,
-        });
-    }
-    async unpin(reason) {
-        await this.rest.delete(`/channels/${this.channelId}/pins/${this.id}`, reason);
-    }
-    async react(emoji) {
-        await this.rest.request(`/channels/${this.channelId}/messages/${this.id}/reactions/${encodeURIComponent(emoji)}/@me`, { method: 'PUT' });
     }
     toString() {
         return this.content;

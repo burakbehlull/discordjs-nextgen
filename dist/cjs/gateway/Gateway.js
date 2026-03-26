@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Gateway = void 0;
 const ws_1 = __importDefault(require("ws"));
 const events_1 = require("events");
-const constants_1 = require("../types/constants");
+const constants_js_1 = require("../types/constants.js");
 class Gateway extends events_1.EventEmitter {
     constructor(token, options) {
         super();
@@ -29,7 +29,7 @@ class Gateway extends events_1.EventEmitter {
         this.options = options;
     }
     connect() {
-        const url = this.resumeUrl ?? constants_1.GATEWAY_URL;
+        const url = this.resumeUrl ?? constants_js_1.GATEWAY_URL;
         this.ws = new ws_1.default(url);
         this.ws.on('open', () => {
             this.reconnecting = false;
@@ -62,7 +62,7 @@ class Gateway extends events_1.EventEmitter {
             this.sequence = s;
         }
         switch (op) {
-            case constants_1.GatewayOpcodes.HELLO: {
+            case constants_js_1.GatewayOpcodes.HELLO: {
                 const data = d;
                 this.startHeartbeat(data.heartbeat_interval);
                 if (this.sessionId) {
@@ -73,125 +73,103 @@ class Gateway extends events_1.EventEmitter {
                 }
                 break;
             }
-            case constants_1.GatewayOpcodes.HEARTBEAT_ACK:
+            case constants_js_1.GatewayOpcodes.HEARTBEAT_ACK:
                 this.lastHeartbeatAck = true;
                 break;
-            case constants_1.GatewayOpcodes.HEARTBEAT:
+            case constants_js_1.GatewayOpcodes.HEARTBEAT:
                 this.sendHeartbeat();
                 break;
-            case constants_1.GatewayOpcodes.RECONNECT:
+            case constants_js_1.GatewayOpcodes.RECONNECT:
                 this.reconnect();
                 break;
-            case constants_1.GatewayOpcodes.INVALID_SESSION: {
+            case constants_js_1.GatewayOpcodes.INVALID_SESSION: {
                 const resumable = d;
-                if (!resumable) {
+                if (resumable) {
+                    this.reconnect();
+                }
+                else {
                     this.sessionId = null;
                     this.resumeUrl = null;
+                    this.reconnect();
                 }
-                setTimeout(() => this.reconnect(), 1000 + Math.random() * 4000);
                 break;
             }
-            case constants_1.GatewayOpcodes.DISPATCH:
-                if (t)
-                    this.handleEvent(t, d);
+            case constants_js_1.GatewayOpcodes.DISPATCH:
+                if (t === 'READY') {
+                    const data = d;
+                    this.sessionId = data.session_id;
+                    this.resumeUrl = data.resume_gateway_url;
+                }
+                this.emit('dispatch', t, d);
                 break;
         }
     }
-    handleEvent(event, data) {
-        if (event === 'READY') {
-            const d = data;
-            this.sessionId = d.session_id;
-            this.resumeUrl = d.resume_gateway_url + '?v=10&encoding=json';
-        }
-        this.emit('dispatch', event, data);
-    }
     identify() {
-        this.send({
-            op: constants_1.GatewayOpcodes.IDENTIFY,
-            d: {
-                token: this.token,
-                intents: this.options.intents,
-                properties: {
-                    os: process.platform,
-                    browser: 'discordjs-nextgen',
-                    device: 'discordjs-nextgen',
-                },
-                presence: this.options.presence,
+        this.send(constants_js_1.GatewayOpcodes.IDENTIFY, {
+            token: this.token,
+            intents: this.options.intents,
+            properties: {
+                os: process.platform,
+                browser: 'discordjs-nextgen',
+                device: 'discordjs-nextgen',
             },
+            presence: this.options.presence,
         });
     }
     resume() {
-        this.send({
-            op: constants_1.GatewayOpcodes.RESUME,
-            d: {
-                token: this.token,
-                session_id: this.sessionId,
-                seq: this.sequence,
-            },
+        this.send(constants_js_1.GatewayOpcodes.RESUME, {
+            token: this.token,
+            session_id: this.sessionId,
+            seq: this.sequence,
         });
     }
     startHeartbeat(interval) {
         if (this.heartbeatInterval)
             clearInterval(this.heartbeatInterval);
-        setTimeout(() => {
+        this.heartbeatInterval = setInterval(() => {
+            if (!this.lastHeartbeatAck) {
+                this.reconnect();
+                return;
+            }
+            this.lastHeartbeatAck = false;
             this.sendHeartbeat();
-            this.heartbeatInterval = setInterval(() => {
-                if (!this.lastHeartbeatAck) {
-                    this.reconnect();
-                    return;
-                }
-                this.lastHeartbeatAck = false;
-                this.sendHeartbeat();
-            }, interval);
-        }, interval * Math.random());
+        }, interval);
     }
     sendHeartbeat() {
-        this.send({ op: constants_1.GatewayOpcodes.HEARTBEAT, d: this.sequence });
+        this.send(constants_js_1.GatewayOpcodes.HEARTBEAT, this.sequence);
     }
     reconnect() {
         if (this.reconnecting)
             return;
         this.reconnecting = true;
-        this.cleanup();
+        this.destroy();
         this.connect();
+    }
+    send(op, d) {
+        if (this.ws?.readyState === ws_1.default.OPEN) {
+            this.ws.send(JSON.stringify({ op, d }));
+        }
+    }
+    shouldResume(code) {
+        return code !== 1000 && code !== 4007 && code !== 4009;
     }
     cleanup() {
         if (this.heartbeatInterval) {
             clearInterval(this.heartbeatInterval);
             this.heartbeatInterval = null;
         }
-        if (this.ws) {
-            this.ws.removeAllListeners();
-            if (this.ws.readyState === ws_1.default.OPEN) {
-                this.ws.close();
-            }
-            this.ws = null;
-        }
-    }
-    shouldResume(code) {
-        const nonResumableCodes = [4004, 4010, 4011, 4012, 4013, 4014];
-        return !nonResumableCodes.includes(code);
-    }
-    send(payload) {
-        if (this.ws?.readyState === ws_1.default.OPEN) {
-            this.ws.send(JSON.stringify(payload));
-        }
     }
     updatePresence(presence) {
-        this.send({
-            op: constants_1.GatewayOpcodes.PRESENCE_UPDATE,
-            d: {
-                since: presence.status === 'idle' ? Date.now() : null,
-                activities: presence.activities ?? [],
-                status: presence.status ?? 'online',
-                afk: presence.afk ?? false,
-            },
-        });
+        this.options.presence = presence;
+        this.send(constants_js_1.GatewayOpcodes.PRESENCE_UPDATE, presence);
     }
     destroy() {
-        this.sessionId = null;
-        this.resumeUrl = null;
         this.cleanup();
+        if (this.ws) {
+            this.ws.removeAllListeners();
+            this.ws.close();
+            this.ws = null;
+        }
     }
 }
 exports.Gateway = Gateway;

@@ -1,5 +1,5 @@
 import * as https from 'https';
-import { API_BASE } from '../types/constants';
+import { API_BASE } from '../types/constants.js';
 
 export type HTTPMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -99,27 +99,23 @@ export class RESTClient {
     });
   }
 
-  get<T = unknown>(endpoint: string): Promise<T> {
+  async get<T = unknown>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: 'GET' });
   }
 
-  post<T = unknown>(endpoint: string, body?: Record<string, unknown>): Promise<T> {
+  async post<T = unknown>(endpoint: string, body?: Record<string, unknown> | unknown[]): Promise<T> {
     return this.request<T>(endpoint, { method: 'POST', body });
   }
 
-  patch<T = unknown>(
+  async patch<T = unknown>(
     endpoint: string,
-    body?: Record<string, unknown>,
+    body?: Record<string, unknown> | unknown[],
     reason?: string
   ): Promise<T> {
     return this.request<T>(endpoint, { method: 'PATCH', body, reason });
   }
 
-  put<T = unknown>(endpoint: string, body?: Record<string, unknown>): Promise<T> {
-    return this.request<T>(endpoint, { method: 'PUT', body });
-  }
-
-  delete<T = unknown>(endpoint: string, reason?: string): Promise<T> {
+  async delete<T = unknown>(endpoint: string, reason?: string): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE', reason });
   }
 }

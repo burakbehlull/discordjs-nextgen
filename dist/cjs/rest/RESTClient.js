@@ -35,7 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RESTClient = void 0;
 const https = __importStar(require("https"));
-const constants_1 = require("../types/constants");
+const constants_js_1 = require("../types/constants.js");
 class RESTClient {
     constructor(token) {
         this.rateLimits = new Map();
@@ -53,7 +53,7 @@ class RESTClient {
             await new Promise((r) => setTimeout(r, waitMs));
         }
         return new Promise((resolve, reject) => {
-            const url = new URL(constants_1.API_BASE + endpoint);
+            const url = new URL(constants_js_1.API_BASE + endpoint);
             const bodyStr = body ? JSON.stringify(body) : undefined;
             const headers = {
                 Authorization: `Bot ${this.token}`,
@@ -109,19 +109,16 @@ class RESTClient {
             req.end();
         });
     }
-    get(endpoint) {
+    async get(endpoint) {
         return this.request(endpoint, { method: 'GET' });
     }
-    post(endpoint, body) {
+    async post(endpoint, body) {
         return this.request(endpoint, { method: 'POST', body });
     }
-    patch(endpoint, body, reason) {
+    async patch(endpoint, body, reason) {
         return this.request(endpoint, { method: 'PATCH', body, reason });
     }
-    put(endpoint, body) {
-        return this.request(endpoint, { method: 'PUT', body });
-    }
-    delete(endpoint, reason) {
+    async delete(endpoint, reason) {
         return this.request(endpoint, { method: 'DELETE', reason });
     }
 }

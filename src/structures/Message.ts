@@ -1,9 +1,9 @@
-import type { RESTClient } from '../rest/RESTClient';
-import type { RawMessage, RawMember } from '../types/raw';
-import { User } from './User';
-import { Channel } from './Channel';
-import type { EmbedBuilder } from '../builders/EmbedBuilder';
-import type { ActionRowBuilder } from '../builders/ButtonBuilder';
+import type { RESTClient } from '../rest/RESTClient.js';
+import type { RawMessage, RawMember } from '../types/raw.js';
+import { User } from './User.js';
+import { Channel } from './Channel.js';
+import type { EmbedBuilder } from '../builders/EmbedBuilder.js';
+import type { ActionRowBuilder } from '../builders/ButtonBuilder.js';
 
 export interface Member {
   nick: string | null;
@@ -98,24 +98,6 @@ export class Message {
 
   async delete(reason?: string): Promise<void> {
     await this.rest.delete(`/channels/${this.channelId}/messages/${this.id}`, reason);
-  }
-
-  async pin(reason?: string): Promise<void> {
-    await this.rest.request(`/channels/${this.channelId}/pins/${this.id}`, {
-      method: 'PUT',
-      reason,
-    });
-  }
-
-  async unpin(reason?: string): Promise<void> {
-    await this.rest.delete(`/channels/${this.channelId}/pins/${this.id}`, reason);
-  }
-
-  async react(emoji: string): Promise<void> {
-    await this.rest.request(
-      `/channels/${this.channelId}/messages/${this.id}/reactions/${encodeURIComponent(emoji)}/@me`,
-      { method: 'PUT' }
-    );
   }
 
   toString(): string {

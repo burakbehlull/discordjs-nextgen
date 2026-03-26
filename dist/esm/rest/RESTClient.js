@@ -1,5 +1,5 @@
 import * as https from 'https';
-import { API_BASE } from '../types/constants';
+import { API_BASE } from '../types/constants.js';
 export class RESTClient {
     constructor(token) {
         this.rateLimits = new Map();
@@ -73,19 +73,16 @@ export class RESTClient {
             req.end();
         });
     }
-    get(endpoint) {
+    async get(endpoint) {
         return this.request(endpoint, { method: 'GET' });
     }
-    post(endpoint, body) {
+    async post(endpoint, body) {
         return this.request(endpoint, { method: 'POST', body });
     }
-    patch(endpoint, body, reason) {
+    async patch(endpoint, body, reason) {
         return this.request(endpoint, { method: 'PATCH', body, reason });
     }
-    put(endpoint, body) {
-        return this.request(endpoint, { method: 'PUT', body });
-    }
-    delete(endpoint, reason) {
+    async delete(endpoint, reason) {
         return this.request(endpoint, { method: 'DELETE', reason });
     }
 }

@@ -1,6 +1,6 @@
-import type { Interaction } from '../structures/Interaction';
-import type { SlashCommandBuilder } from '../builders/SlashCommandBuilder';
-import { Context } from '../structures/Context';
+import type { Interaction } from '../structures/Interaction.js';
+import type { SlashCommandBuilder } from '../builders/SlashCommandBuilder.js';
+import { Context } from '../structures/Context.js';
 
 export interface SlashCommand {
   data: SlashCommandBuilder;

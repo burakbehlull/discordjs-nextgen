@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import type { PresenceData } from '../types/raw';
+import type { PresenceData } from '../types/raw.js';
 export interface GatewayOptions {
     intents: number;
     presence?: PresenceData;
@@ -18,15 +18,14 @@ export declare class Gateway extends EventEmitter {
     private readonly fatalCodes;
     connect(): void;
     private handlePayload;
-    private handleEvent;
     private identify;
     private resume;
     private startHeartbeat;
     private sendHeartbeat;
     private reconnect;
-    private cleanup;
+    private send;
     private shouldResume;
-    send(payload: unknown): void;
+    private cleanup;
     updatePresence(presence: PresenceData): void;
     destroy(): void;
 }

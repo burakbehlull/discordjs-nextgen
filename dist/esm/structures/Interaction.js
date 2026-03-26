@@ -1,4 +1,4 @@
-import { User } from './User';
+import { User } from './User.js';
 export class Interaction {
     constructor(data, rest) {
         this._replied = false;
@@ -64,34 +64,26 @@ export class Interaction {
             throw new Error('Interaction already replied');
         await this.rest.post(`/interactions/${this.id}/${this.token}/callback`, {
             type: 5,
-            data: ephemeral ? { flags: 64 } : {},
+            data: { flags: ephemeral ? 64 : 0 },
         });
-        this._replied = true;
         this._deferred = true;
-    }
-    async editReply(options) {
-        if (!this._replied)
-            throw new Error('Interaction not yet replied');
-        const payload = this.resolveOptions(options);
-        await this.rest.patch(`/webhooks/${this.applicationId}/${this.token}/messages/@original`, payload);
+        this._replied = true;
     }
     async followUp(options) {
         const payload = this.resolveOptions(options);
         await this.rest.post(`/webhooks/${this.applicationId}/${this.token}`, payload);
     }
     resolveOptions(options) {
-        if (typeof options === 'string')
+        if (typeof options === 'string') {
             return { content: options };
-        const payload = {};
-        if (options.content)
-            payload.content = options.content;
-        if (options.embeds)
-            payload.embeds = options.embeds.map((e) => e.toJSON());
-        if (options.components)
-            payload.components = options.components.map((r) => r.toJSON());
-        if (options.ephemeral)
-            payload.flags = 64;
-        return payload;
+        }
+        const { embeds, components, ephemeral, ...rest } = options;
+        return {
+            ...rest,
+            embeds: embeds?.map((e) => e.toJSON()),
+            components: components?.map((c) => c.toJSON()),
+            flags: ephemeral ? 64 : 0,
+        };
     }
 }
 //# sourceMappingURL=Interaction.js.map
