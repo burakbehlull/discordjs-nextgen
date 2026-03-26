@@ -23,6 +23,7 @@ export declare class Context {
     get createdAt(): Date;
     get commandName(): string | null;
     get customId(): string | null;
+    get isCommand(): boolean;
     get memberPermissions(): string | null;
 }
 //# sourceMappingURL=Context.d.ts.map

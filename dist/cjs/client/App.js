@@ -310,6 +310,10 @@ class App extends events_1.EventEmitter {
         this.on('messageCreate', (message) => {
             if (!this.prefixHandler)
                 return;
+            const prefix = this.prefixHandler.getPrefix(message.content);
+            if (prefix) {
+                message._usedPrefix = prefix;
+            }
             const ctx = new Context_js_1.Context(message);
             this.middlewareManager.run(ctx, async () => {
                 await this.prefixHandler.handle(message);

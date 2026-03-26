@@ -29,6 +29,10 @@ export class Cooldown {
 export function cooldown(seconds) {
     const cooldownInstance = new Cooldown(seconds);
     return async (ctx, next) => {
+        // Sadece gerçek komutlar (Slash veya Prefix) için cooldown çalıştır
+        if (!ctx.isCommand) {
+            return next();
+        }
         const userId = ctx.user.id;
         if (cooldownInstance.isOnCooldown(userId)) {
             const remaining = cooldownInstance.remaining(userId);

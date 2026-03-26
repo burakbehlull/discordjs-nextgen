@@ -24,6 +24,7 @@ export declare class PrefixHandler {
     constructor(options?: Partial<PrefixOptions>);
     configure(options?: Partial<PrefixOptions>): void;
     addCommand(cmd: PrefixCommand): void;
+    getPrefix(content: string): string | null;
     handle(message: Message): Promise<void>;
 }
 //# sourceMappingURL=PrefixHandler.d.ts.map

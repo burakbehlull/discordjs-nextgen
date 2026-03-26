@@ -41,20 +41,21 @@ export class PrefixHandler {
             this.cooldowns.set(name, new Cooldown(cmd.cooldown));
         }
     }
+    getPrefix(content) {
+        for (const prefix of this.prefixes) {
+            if (content.startsWith(prefix)) {
+                return prefix;
+            }
+        }
+        return null;
+    }
     async handle(message) {
         if (this.ignoreBots && message.author.bot)
             return;
-        const content = message.content;
-        let usedPrefix = null;
-        for (const prefix of this.prefixes) {
-            if (content.startsWith(prefix)) {
-                usedPrefix = prefix;
-                break;
-            }
-        }
+        const usedPrefix = message._usedPrefix || this.getPrefix(message.content);
         if (!usedPrefix)
             return;
-        const [commandName, ...args] = content.slice(usedPrefix.length).trim().split(/\s+/);
+        const [commandName, ...args] = message.content.slice(usedPrefix.length).trim().split(/\s+/);
         if (!commandName)
             return;
         const lookupName = this.caseSensitive ? commandName : commandName.toLowerCase();
