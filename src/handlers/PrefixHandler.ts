@@ -16,6 +16,7 @@ export interface PrefixOptions {
   prefix?: string | string[];
   commands?: PrefixCommand[];
   ignoreBots?: boolean;
+  caseSensitive?: boolean;
 }
 
 export class PrefixHandler {
@@ -23,10 +24,12 @@ export class PrefixHandler {
   private readonly commands: Map<string, PrefixCommand> = new Map();
   private readonly cooldowns: Map<string, Cooldown> = new Map();
   private ignoreBots: boolean;
+  private caseSensitive: boolean;
 
   constructor(options: Partial<PrefixOptions> = {}) {
     this.prefixes = Array.isArray(options.prefix) ? options.prefix : options.prefix ? [options.prefix] : ['!'];
     this.ignoreBots = options.ignoreBots ?? true;
+    this.caseSensitive = options.caseSensitive ?? false;
 
     if (options.commands) {
       for (const cmd of options.commands) {
@@ -44,6 +47,10 @@ export class PrefixHandler {
       this.ignoreBots = options.ignoreBots;
     }
 
+    if (options.caseSensitive !== undefined) {
+      this.caseSensitive = options.caseSensitive;
+    }
+
     if (options.commands) {
       for (const cmd of options.commands) {
         this.addCommand(cmd);
@@ -52,12 +59,14 @@ export class PrefixHandler {
   }
 
   addCommand(cmd: PrefixCommand): void {
-    this.commands.set(cmd.name.toLowerCase(), cmd);
+    const name = this.caseSensitive ? cmd.name : cmd.name.toLowerCase();
+    this.commands.set(name, cmd);
     for (const alias of cmd.aliases ?? []) {
-      this.commands.set(alias.toLowerCase(), cmd);
+      const aliasName = this.caseSensitive ? alias : alias.toLowerCase();
+      this.commands.set(aliasName, cmd);
     }
     if (cmd.cooldown) {
-      this.cooldowns.set(cmd.name.toLowerCase(), new Cooldown(cmd.cooldown));
+      this.cooldowns.set(name, new Cooldown(cmd.cooldown));
     }
   }
 
@@ -79,7 +88,8 @@ export class PrefixHandler {
     const [commandName, ...args] = content.slice(usedPrefix.length).trim().split(/\s+/);
     if (!commandName) return;
 
-    const cmd = this.commands.get(commandName.toLowerCase());
+    const lookupName = this.caseSensitive ? commandName : commandName.toLowerCase();
+    const cmd = this.commands.get(lookupName);
     if (!cmd) return;
 
     if (cmd.permissions && cmd.permissions.length > 0) {

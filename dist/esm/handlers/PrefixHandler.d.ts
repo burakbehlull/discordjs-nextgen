@@ -13,12 +13,14 @@ export interface PrefixOptions {
     prefix?: string | string[];
     commands?: PrefixCommand[];
     ignoreBots?: boolean;
+    caseSensitive?: boolean;
 }
 export declare class PrefixHandler {
     private prefixes;
     private readonly commands;
     private readonly cooldowns;
     private ignoreBots;
+    private caseSensitive;
     constructor(options?: Partial<PrefixOptions>);
     configure(options?: Partial<PrefixOptions>): void;
     addCommand(cmd: PrefixCommand): void;

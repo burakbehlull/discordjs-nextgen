@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GatewayEvents = exports.Intents = exports.CommandHandler = exports.ButtonHandlerManager = exports.PrefixHandler = exports.Permission = exports.Cooldown = exports.Logger = exports.Interaction = exports.Message = exports.Guild = exports.Channel = exports.User = exports.ActionRowBuilder = exports.ButtonBuilder = exports.SlashCommandBuilder = exports.EmbedBuilder = exports.Context = exports.App = void 0;
+exports.GatewayEvents = exports.Intents = exports.CommandHandler = exports.ButtonHandlerManager = exports.PrefixHandler = exports.Permission = exports.cooldown = exports.Cooldown = exports.Logger = exports.Interaction = exports.Message = exports.Guild = exports.Channel = exports.User = exports.ActionRowBuilder = exports.ButtonBuilder = exports.SlashCommandBuilder = exports.EmbedBuilder = exports.Context = exports.App = void 0;
 var App_js_1 = require("./client/App.js");
 Object.defineProperty(exports, "App", { enumerable: true, get: function () { return App_js_1.App; } });
 var Context_js_1 = require("./structures/Context.js");
@@ -26,6 +26,7 @@ var Logger_js_1 = require("./utils/Logger.js");
 Object.defineProperty(exports, "Logger", { enumerable: true, get: function () { return Logger_js_1.Logger; } });
 var Cooldown_js_1 = require("./utils/Cooldown.js");
 Object.defineProperty(exports, "Cooldown", { enumerable: true, get: function () { return Cooldown_js_1.Cooldown; } });
+Object.defineProperty(exports, "cooldown", { enumerable: true, get: function () { return Cooldown_js_1.cooldown; } });
 var Permission_js_1 = require("./utils/Permission.js");
 Object.defineProperty(exports, "Permission", { enumerable: true, get: function () { return Permission_js_1.Permission; } });
 var PrefixHandler_js_1 = require("./handlers/PrefixHandler.js");

@@ -9,7 +9,7 @@ export { Guild } from './structures/Guild.js';
 export { Message } from './structures/Message.js';
 export { Interaction } from './structures/Interaction.js';
 export { Logger } from './utils/Logger.js';
-export { Cooldown } from './utils/Cooldown.js';
+export { Cooldown, cooldown } from './utils/Cooldown.js';
 export { Permission } from './utils/Permission.js';
 export { PrefixHandler } from './handlers/PrefixHandler.js';
 export { ButtonHandlerManager } from './handlers/ButtonHandler.js';

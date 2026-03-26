@@ -26,4 +26,17 @@ export class Cooldown {
         this.map.delete(userId);
     }
 }
+export function cooldown(seconds) {
+    const cooldownInstance = new Cooldown(seconds);
+    return async (ctx, next) => {
+        const userId = ctx.user.id;
+        if (cooldownInstance.isOnCooldown(userId)) {
+            const remaining = cooldownInstance.remaining(userId);
+            await ctx.reply(`Lutfen bekle! **${remaining}s** sonra tekrar dene.`).catch(() => null);
+            return;
+        }
+        cooldownInstance.set(userId);
+        await next();
+    };
+}
 //# sourceMappingURL=Cooldown.js.map

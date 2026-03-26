@@ -4,8 +4,6 @@ Basit, hızlı ve modüler bir Discord bot framework'ü. Hem **ESM** hem de **Co
 
 ## 🌟 Neden discordjs-nextgen?
 
-- **TypeScript Desteği**: Tam tip güvenliği ve otomatik tamamlamalar (IntelliSense) ile hatasız geliştirme.
-- **Hibrit Modül**: Hem **ESM** (`import`) hem de **CommonJS** (`require`) projeleriyle %100 uyumlu.
 - **Fluent API**: Zincirleme metodlarla botunuzu saniyeler içinde yapılandırın.
 - **Dinamik Yükleyici**: Komutları, olayları ve butonları klasörlerden otomatik olarak yükleyin.
 - **Hibrit Komut Sistemi**: Tek kodla hem Prefix hem Slash komutu oluşturun.
@@ -21,47 +19,44 @@ npm install discordjs-nextgen
 yarn add discordjs-nextgen
 ```
 
-## 🛠️ Hızlı Başlangıç 
+## 🛠️ Hızlı Başlangıç
 
 ### Ana Dosya (bot.ts)
 
 ```typescript
-import { App, Intents } from 'discordjs-nextgen';
+import { App, Intents, Logger, cooldown } from 'discordjs-nextgen';
 
 const app = new App({
   intents: Intents.ALL,
 });
 
 app
-  // 1. Middleware (Ara Yazılım)
-  .use((ctx, next) => {
-    console.log(`[LOG] ${ctx.author.tag} komut kullandı.`);
-    next();
-  })
-  // 2. Hibrit Komutları Yükle (Hem ! hem / olarak çalışır)
-  .command({
-    folder: 'commands/hybrid'
-  })
-  // 3. Buton Etkileşimlerini Yükle
-  .button({
-    folder: 'buttons'
-  })
-  // 4. Sadece Prefix Komutları
-  .prefix({
-    folder: 'commands/prefix',
-    prefix: '!',
-  })
-  // 5. Sadece Slash Komutları
-  .slash({
-    folder: 'commands/slash'
-  })
+  // 1. Logger Middleware (Renklendirme seçeneği ile)
+  .use(Logger({
+    colors: { info: 'cyan', error: 'red' }
+  }))
+  
+  // 2. Global Cooldown (Tüm komutlar için 3 saniye)
+  .use(cooldown(3))
+
+  // 3. Hibrit Komutları Yükle (Hem ! hem / olarak çalışır)
+  .command({ folder: 'commands/hybrid' })
+
+  // 4. Buton Etkileşimlerini Yükle
+  .button({ folder: 'buttons' })
+
+  // 5. Prefix & Slash Komutları
+  .prefix({ folder: 'commands/prefix', prefix: '!' })
+  .slash({ folder: 'commands/slash' })
+
   // 6. Olayları Yükle
   .events('events')
+
   // 7. Botu Çalıştır
   .run('YOUR_DISCORD_TOKEN');
 ```
 
-## 🧩 Örnekler
+## 🧩 Modüler Kullanım
 
 ### Hibrit Komut (HybridCommand)
 `commands/hybrid/ping.ts`
@@ -70,7 +65,7 @@ import { HybridCommand } from 'discordjs-nextgen';
 
 const pingHybrid: HybridCommand = {
   name: 'ping',
-  description: 'Hem prefix hem slash olarak çalışır!',
+  description: 'Gecikmeyi ölçer',
   run: async (ctx) => {
     const delay = Date.now() - ctx.createdAt.getTime();
     await ctx.reply(`Pong! Gecikme: **${delay}ms**`);
@@ -81,115 +76,101 @@ export default pingHybrid;
 ```
 
 ### Buton İşleyici (ButtonHandler)
+`.button({ folder: 'buttons' })` kullandığınızda, bu klasördeki her dosya bir buton işleyici olarak yüklenir.
+
 `buttons/verify.ts`
 ```typescript
 import { ButtonHandler } from 'discordjs-nextgen';
 
 const verifyButton: ButtonHandler = {
-  customId: 'verify_user',
+  customId: 'verify_user', // Butonun custom_id'si ile eşleşir
   run: async (ctx) => {
-    await ctx.reply({ content: 'Başarıyla doğrulandınız!', ephemeral: true });
+    // ctx.user butonun basan kullanıcıdır
+    await ctx.reply({ content: 'Doğrulandınız!', ephemeral: true });
   },
 };
 
 export default verifyButton;
 ```
 
-### Prefix Komutu (Cooldown & Yetki)
-`commands/prefix/slow.ts`
+### Prefix Komutu (Özel Ayarlar)
+`commands/prefix/admin.ts`
 ```typescript
 import { PrefixCommand } from 'discordjs-nextgen';
 
-const slowCommand: PrefixCommand = {
-  name: 'slow',
-  description: 'Bekleme süreli komut',
-  cooldown: 10, // 10 saniye
+const adminCommand: PrefixCommand = {
+  name: 'temizle',
+  aliases: ['purge'],
+  cooldown: 5, // Komuta özel 5 sn cooldown
   permissions: ['MANAGE_MESSAGES'],
-  run: async (ctx) => {
-    await ctx.reply('Bu komut 10 saniyede bir kullanılabilir.');
+  run: async (ctx, args) => {
+    const amount = parseInt(args[0]) || 10;
+    await ctx.reply(`${amount} mesaj siliniyor...`);
   },
 };
 
-export default slowCommand;
-```
-
-### Olay (AppEvent)
-`events/ready.ts`
-```typescript
-import { AppEvent } from 'discordjs-nextgen';
-
-const readyEvent: AppEvent<'ready'> = {
-  name: 'ready',
-  once: true,
-  run: (user) => {
-    console.log(`${user.tag} hazır!`);
-  },
-};
-
-export default readyEvent;
+export default adminCommand;
 ```
 
 ## 🧠 Gelişmiş Özellikler
 
-### Context Sistemi
-`ctx` nesnesi, mesajın veya etkileşimin (interaction) tüm detaylarını ortak bir yapıda sunar:
-- `ctx.user`: Komutu kullanan kullanıcı.
-- `ctx.guild`: Komutun kullanıldığı sunucu.
-- `ctx.channel`: Komutun kullanıldığı kanal.
-- `ctx.reply()`: Mesaj veya etkileşime yanıt verme.
-- `ctx.deferReply()`: Yanıtı erteler (Slash komutları için).
-- `ctx.followUp()`: Ertelenmiş veya yanıtlanmış komuta ek yanıt gönderir.
-- `ctx.editReply()`: Mevcut yanıtı düzenler.
-- `ctx.isInteraction`: Komut slash mı?
-- `ctx.args`: Komut argümanları (dizi).
-- `ctx.memberPermissions`: Kullanıcının yetkileri.
+### Context Sistemi (`ctx`)
+`ctx` nesnesi hem Mesaj (Prefix) hem de Etkileşim (Slash/Button) verilerini normalize eder:
+- `ctx.user`: Eylemi gerçekleştiren kullanıcı (User nesnesi).
+- `ctx.guild`: Sunucu nesnesi (varsa).
+- `ctx.channel`: Kanal nesnesi (varsa).
+- `ctx.reply(content | options)`: Akıllı yanıt sistemi. Interaction ise `reply()`, mesaj ise `reply()`/`send()` yapar.
+- `ctx.deferReply(ephemeral?)`: Yanıtı geciktirir (sadece Interaction).
+- `ctx.editReply(content | options)`: Geciktirilmiş yanıtı düzenler.
+- `ctx.followUp(content | options)`: Yeni bir yanıt gönderir.
+- `ctx.args`: Prefix komutlarında kelime dizisi, Slash komutlarında opsiyon değerleri.
+- `ctx.isInteraction`: Eylemin bir Interaction (Slash/Button) olup olmadığını belirtir.
+- `ctx.createdAt`: Eylemin oluşturulma zamanı.
 
 ### Middleware Sistemi
-Her komut çalışmadan önce çalışacak fonksiyonlar zinciri:
+Kendi ara yazılımlarınızı yazın. Middleware'ler komut çalışmadan önce çalışır:
 ```typescript
 app.use(async (ctx, next) => {
-  if (ctx.user.id === 'BANLI_ID') return; // Komutu durdurur
-  await next(); // Zinciri devam ettirir
+  // Komut çalışmadan önce:
+  Logger.info(`${ctx.user.tag} bir eylem başlattı.`);
+  
+  await next(); // Komutu (veya bir sonraki middleware'i) çalıştır
+  
+  // Komut bittikten sonra:
+  Logger.success(`Eylem tamamlandı.`);
 });
 ```
 
 ### Plugin Sistemi
-Eklenti bazlı geliştirme:
+Botunuzu modüler parçalarla genişletin:
 ```typescript
 app.use({
   name: 'my-plugin',
   setup: (bot) => {
-    bot.on('ready', () => console.log('Plugin hazır!'));
+    bot.on('ready', (user) => Logger.info(`${user.tag} için plugin hazır!`));
   }
 });
 ```
 
 ## 📚 API Referansı
 
-### `App` Sınıfı
+### `App` Metotları
+- `.use(fn | plugin)`: Middleware veya Plugin ekler.
+- `.command({ folder })`: Belirtilen klasördeki hibrit komutları yükler.
+- `.prefix({ folder, prefix })`: Prefix komutlarını klasörden yükler ve prefix ayarlar.
+- `.slash({ folder, guildId? })`: Slash komutlarını klasörden yükler. `guildId` verilirse sadece o sunucuya yükler.
+- `.button({ folder })`: Belirtilen klasördeki buton işleyicilerini (`customId` tabanlı) yükler.
+- `.events(folder)`: Belirtilen klasördeki event dosyalarını yükler.
+- `.run(token)`: Botu başlatır (alternatif: `.login(token)`).
+- `.setPresence(data)`: Botun durumunu (aktif, boşta, dnd) ve aktivitesini ayarlar.
+- `.fetchUser(id)` / `.fetchGuild(id)` / `.fetchChannel(id)`: Discord API'den veri çeker.
 
-- `new App(options)`: Yeni bir uygulama örneği oluşturur.
-- `.use(middleware | plugin)`: Ara yazılım veya eklenti ekler.
-- `.prefix(options)`: Prefix komutlarını yapılandırır.
-- `.slash(options)`: Slash komutlarını yapılandırır.
-- `.command(options)`: Hibrit komutları yapılandırır.
-- `.button(options)`: Buton işleyicilerini yapılandırır.
-- `.events(folder)`: Olayları klasörden yükler.
-- `.run(token)`: Botu başlatır.
-- `.fetchUser(id)`: Kullanıcı verilerini çeker.
-- `.fetchGuild(id)`: Sunucu verilerini çeker.
-- `.setPresence(data)`: Bot durumunu günceller.
-
-### `Context` Nesnesi
-
-Her komutun `run` fonksiyonuna iletilen nesnedir:
-- `ctx.author`: Komutu çalıştıran `User`.
-- `ctx.message`: Eğer prefix komutuysa `Message` nesnesi, değilse `null`.
-- `ctx.interaction`: Eğer slash komutuysa `Interaction` nesnesi, değilse `null`.
-- `ctx.isInteraction`: Komutun etkileşim (slash) olup olmadığını belirtir.
-- `ctx.createdAt`: Komutun oluşturulma tarihi (`Date`).
-- `ctx.args`: Komutla birlikte gelen argümanlar dizisi.
-- `ctx.reply(content | options)`: Kullanıcıya yanıt verir.
+### Yardımcı Fonksiyonlar & Sınıflar
+- `Logger(options?)`: **Middleware** olarak kullanılır. `app.use(Logger())`.
+- `Logger.info()`, `Logger.error()`, `Logger.success()`: **Doğrudan** loglama yapmak için kullanılır.
+- `cooldown(seconds)`: **Middleware** olarak kullanılır. `app.use(cooldown(5))`.
+- `EmbedBuilder`: Zengin mesaj içerikleri oluşturmak için.
+- `ButtonBuilder` & `ActionRowBuilder`: Butonlu mesajlar oluşturmak için.
 
 ## 📄 Lisans
 MIT

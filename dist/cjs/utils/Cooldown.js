@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Cooldown = void 0;
+exports.cooldown = cooldown;
 class Cooldown {
     constructor(seconds) {
         this.map = new Map();
@@ -30,4 +31,17 @@ class Cooldown {
     }
 }
 exports.Cooldown = Cooldown;
+function cooldown(seconds) {
+    const cooldownInstance = new Cooldown(seconds);
+    return async (ctx, next) => {
+        const userId = ctx.user.id;
+        if (cooldownInstance.isOnCooldown(userId)) {
+            const remaining = cooldownInstance.remaining(userId);
+            await ctx.reply(`Lutfen bekle! **${remaining}s** sonra tekrar dene.`).catch(() => null);
+            return;
+        }
+        cooldownInstance.set(userId);
+        await next();
+    };
+}
 //# sourceMappingURL=Cooldown.js.map

@@ -7,4 +7,6 @@ export declare class Cooldown {
     set(userId: string): void;
     clear(userId: string): void;
 }
+import type { MiddlewareFunction } from './MiddlewareManager.js';
+export declare function cooldown(seconds: number): MiddlewareFunction;
 //# sourceMappingURL=Cooldown.d.ts.map

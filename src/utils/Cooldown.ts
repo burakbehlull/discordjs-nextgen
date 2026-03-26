@@ -30,3 +30,22 @@ export class Cooldown {
     this.map.delete(userId);
   }
 }
+
+import type { MiddlewareFunction } from './MiddlewareManager.js';
+
+export function cooldown(seconds: number): MiddlewareFunction {
+  const cooldownInstance = new Cooldown(seconds);
+
+  return async (ctx, next) => {
+    const userId = ctx.user.id;
+
+    if (cooldownInstance.isOnCooldown(userId)) {
+      const remaining = cooldownInstance.remaining(userId);
+      await ctx.reply(`Lutfen bekle! **${remaining}s** sonra tekrar dene.`).catch(() => null);
+      return;
+    }
+
+    cooldownInstance.set(userId);
+    await next();
+  };
+}

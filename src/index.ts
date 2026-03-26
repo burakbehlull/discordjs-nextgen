@@ -18,7 +18,8 @@ export { Interaction } from './structures/Interaction.js';
 export type { InteractionReplyOptions } from './structures/Interaction.js';
 
 export { Logger } from './utils/Logger.js';
-export { Cooldown } from './utils/Cooldown.js';
+export type { LoggerOptions, LoggerColor } from './utils/Logger.js';
+export { Cooldown, cooldown } from './utils/Cooldown.js';
 export { Permission } from './utils/Permission.js';
 export type { PermissionName } from './utils/Permission.js';
 
