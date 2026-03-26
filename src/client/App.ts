@@ -397,6 +397,11 @@ export class App extends EventEmitter {
     this.on('messageCreate', (message) => {
       if (!this.prefixHandler) return;
 
+      const prefix = this.prefixHandler.getPrefix(message.content);
+      if (prefix) {
+        (message as any)._usedPrefix = prefix;
+      }
+
       const ctx = new Context(message);
       this.middlewareManager.run(ctx, async () => {
         await this.prefixHandler!.handle(message);

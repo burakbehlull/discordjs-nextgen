@@ -84,6 +84,17 @@ export class Context {
     return this.interaction?.customId ?? null;
   }
 
+  get isCommand(): boolean {
+    if (this.isInteraction) {
+      return this.interaction?.isCommand || false;
+    }
+    
+    // Prefix command check
+    const message = this.source as any;
+    if (!message._usedPrefix) return false;
+    return true;
+  }
+
   get memberPermissions(): string | null {
     return this.isInteraction
       ? (this.source as Interaction).memberPermissions

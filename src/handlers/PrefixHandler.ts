@@ -70,22 +70,22 @@ export class PrefixHandler {
     }
   }
 
+  getPrefix(content: string): string | null {
+    for (const prefix of this.prefixes) {
+      if (content.startsWith(prefix)) {
+        return prefix;
+      }
+    }
+    return null;
+  }
+
   async handle(message: Message): Promise<void> {
     if (this.ignoreBots && message.author.bot) return;
 
-    const content = message.content;
-    let usedPrefix: string | null = null;
-
-    for (const prefix of this.prefixes) {
-      if (content.startsWith(prefix)) {
-        usedPrefix = prefix;
-        break;
-      }
-    }
-
+    const usedPrefix = (message as any)._usedPrefix || this.getPrefix(message.content);
     if (!usedPrefix) return;
 
-    const [commandName, ...args] = content.slice(usedPrefix.length).trim().split(/\s+/);
+    const [commandName, ...args] = message.content.slice(usedPrefix.length).trim().split(/\s+/);
     if (!commandName) return;
 
     const lookupName = this.caseSensitive ? commandName : commandName.toLowerCase();
