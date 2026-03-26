@@ -29,7 +29,7 @@ export interface HybridCommand {
 
 export interface AppOptions {
   intents?: number | (keyof typeof Intents)[];
-  presence?: PresenceData;
+  presence?: Partial<PresenceData>;
 }
 
 export interface AppEvents {
@@ -234,7 +234,7 @@ export class App extends EventEmitter {
 
     this.gateway = new Gateway(this.token, {
       intents: this.resolveIntents(),
-      presence: this.options.presence,
+      presence: this.options.presence ? this.normalizePresence(this.options.presence) : undefined,
     });
 
     this.gateway.on('dispatch', (event: string, data: unknown) => {
@@ -379,8 +379,21 @@ export class App extends EventEmitter {
     });
   }
 
-  setPresence(presence: PresenceData): void {
-    this.gateway?.updatePresence(presence);
+  setPresence(presence: Partial<PresenceData>): void {
+    this.gateway?.updatePresence(this.normalizePresence(presence));
+  }
+
+  private normalizePresence(presence: Partial<PresenceData>): PresenceData {
+    return {
+      status: presence.status ?? 'online',
+      activities: (presence.activities ?? []).map((activity) => ({
+        name: activity.name,
+        type: activity.type,
+        url: activity.url,
+      })),
+      afk: presence.afk ?? false,
+      since: presence.since ?? null,
+    };
   }
 
   destroy(): void {

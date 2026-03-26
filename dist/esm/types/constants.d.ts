@@ -46,4 +46,12 @@ export declare const Intents: {
     readonly MESSAGE_CONTENT: number;
     readonly ALL: 65535;
 };
+export declare const ActivityTypes: {
+    readonly PLAYING: 0;
+    readonly STREAMING: 1;
+    readonly LISTENING: 2;
+    readonly WATCHING: 3;
+    readonly CUSTOM: 4;
+    readonly COMPETING: 5;
+};
 //# sourceMappingURL=constants.d.ts.map

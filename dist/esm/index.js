@@ -14,5 +14,5 @@ export { Permission } from './utils/Permission.js';
 export { PrefixHandler } from './handlers/PrefixHandler.js';
 export { ButtonHandlerManager } from './handlers/ButtonHandler.js';
 export { CommandHandler } from './handlers/CommandHandler.js';
-export { Intents, GatewayEvents } from './types/constants.js';
+export { Intents, GatewayEvents, ActivityTypes } from './types/constants.js';
 //# sourceMappingURL=index.js.map

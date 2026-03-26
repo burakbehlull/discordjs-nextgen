@@ -1,7 +1,12 @@
 {
   "name": "discordjs-nextgen",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Simple and powerful Discord bot library",
+  "homepage": "https://github.com/burakbehlull/discordjs-nextgen",
+  "repository": {
+    "url": "https://github.com/burakbehlull/discordjs-nextgen"
+  },
+
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/cjs/index.d.ts",
@@ -31,7 +36,7 @@
     "library",
     "discordjs-nextgen"
   ],
-  "author": "",
+  "author": "Burak <@burakbehlull>",
   "license": "MIT",
   "dependencies": {
     "ws": "^8.17.0"

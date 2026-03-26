@@ -125,12 +125,13 @@ export interface RawInteractionOption {
 }
 export type ActivityType = 0 | 1 | 2 | 3 | 4 | 5;
 export interface PresenceData {
-    status?: 'online' | 'idle' | 'dnd' | 'invisible';
-    activities?: Array<{
+    status: 'online' | 'idle' | 'dnd' | 'invisible';
+    activities: Array<{
         name: string;
-        type: ActivityType;
+        type: number | ActivityType | string;
         url?: string;
     }>;
     afk?: boolean;
+    since: number | null;
 }
 //# sourceMappingURL=raw.d.ts.map

@@ -165,7 +165,7 @@ export class App extends EventEmitter {
         this.rest.setToken(this.token);
         this.gateway = new Gateway(this.token, {
             intents: this.resolveIntents(),
-            presence: this.options.presence,
+            presence: this.options.presence ? this.normalizePresence(this.options.presence) : undefined,
         });
         this.gateway.on('dispatch', (event, data) => {
             this.handleDispatch(event, data);
@@ -292,7 +292,19 @@ export class App extends EventEmitter {
         });
     }
     setPresence(presence) {
-        this.gateway?.updatePresence(presence);
+        this.gateway?.updatePresence(this.normalizePresence(presence));
+    }
+    normalizePresence(presence) {
+        return {
+            status: presence.status ?? 'online',
+            activities: (presence.activities ?? []).map((activity) => ({
+                name: activity.name,
+                type: activity.type,
+                url: activity.url,
+            })),
+            afk: presence.afk ?? false,
+            since: presence.since ?? null,
+        };
     }
     destroy() {
         this.gateway?.destroy();

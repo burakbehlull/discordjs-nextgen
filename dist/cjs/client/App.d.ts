@@ -24,7 +24,7 @@ export interface HybridCommand {
 }
 export interface AppOptions {
     intents?: number | (keyof typeof Intents)[];
-    presence?: PresenceData;
+    presence?: Partial<PresenceData>;
 }
 export interface AppEvents {
     ready: [user: User];
@@ -104,7 +104,8 @@ export declare class App extends EventEmitter {
     fetchChannel(channelId: string): Promise<Channel>;
     fetchGuild(guildId: string): Promise<Guild>;
     registerCommands(commands: SlashCommandBuilder[], guildId?: string): Promise<void>;
-    setPresence(presence: PresenceData): void;
+    setPresence(presence: Partial<PresenceData>): void;
+    private normalizePresence;
     destroy(): void;
     private bindPrefixListener;
     private bindInteractionListener;

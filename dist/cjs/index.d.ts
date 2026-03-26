@@ -25,6 +25,6 @@ export { ButtonHandlerManager } from './handlers/ButtonHandler.js';
 export type { ButtonHandler, ButtonHandlerOptions } from './handlers/ButtonHandler.js';
 export { CommandHandler } from './handlers/CommandHandler.js';
 export type { CommandHandlerOptions, SlashCommand } from './handlers/CommandHandler.js';
-export { Intents, GatewayEvents } from './types/constants.js';
+export { Intents, GatewayEvents, ActivityTypes } from './types/constants.js';
 export type { PresenceData } from './types/raw.js';
 //# sourceMappingURL=index.d.ts.map

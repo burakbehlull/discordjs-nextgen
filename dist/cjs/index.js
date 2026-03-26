@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GatewayEvents = exports.Intents = exports.CommandHandler = exports.ButtonHandlerManager = exports.PrefixHandler = exports.Permission = exports.cooldown = exports.Cooldown = exports.Logger = exports.Interaction = exports.Message = exports.Guild = exports.Channel = exports.User = exports.ActionRowBuilder = exports.ButtonBuilder = exports.SlashCommandBuilder = exports.EmbedBuilder = exports.Context = exports.App = void 0;
+exports.ActivityTypes = exports.GatewayEvents = exports.Intents = exports.CommandHandler = exports.ButtonHandlerManager = exports.PrefixHandler = exports.Permission = exports.cooldown = exports.Cooldown = exports.Logger = exports.Interaction = exports.Message = exports.Guild = exports.Channel = exports.User = exports.ActionRowBuilder = exports.ButtonBuilder = exports.SlashCommandBuilder = exports.EmbedBuilder = exports.Context = exports.App = void 0;
 var App_js_1 = require("./client/App.js");
 Object.defineProperty(exports, "App", { enumerable: true, get: function () { return App_js_1.App; } });
 var Context_js_1 = require("./structures/Context.js");
@@ -38,4 +38,5 @@ Object.defineProperty(exports, "CommandHandler", { enumerable: true, get: functi
 var constants_js_1 = require("./types/constants.js");
 Object.defineProperty(exports, "Intents", { enumerable: true, get: function () { return constants_js_1.Intents; } });
 Object.defineProperty(exports, "GatewayEvents", { enumerable: true, get: function () { return constants_js_1.GatewayEvents; } });
+Object.defineProperty(exports, "ActivityTypes", { enumerable: true, get: function () { return constants_js_1.ActivityTypes; } });
 //# sourceMappingURL=index.js.map

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Intents = exports.GatewayEvents = exports.GatewayOpcodes = exports.GATEWAY_URL = exports.API_BASE = void 0;
+exports.ActivityTypes = exports.Intents = exports.GatewayEvents = exports.GatewayOpcodes = exports.GATEWAY_URL = exports.API_BASE = void 0;
 exports.API_BASE = 'https://discord.com/api/v10';
 exports.GATEWAY_URL = 'wss://gateway.discord.gg/?v=10&encoding=json';
 exports.GatewayOpcodes = {
@@ -48,5 +48,13 @@ exports.Intents = {
     DIRECT_MESSAGE_TYPING: 1 << 14,
     MESSAGE_CONTENT: 1 << 15,
     ALL: 0b1111111111111111,
+};
+exports.ActivityTypes = {
+    PLAYING: 0,
+    STREAMING: 1,
+    LISTENING: 2,
+    WATCHING: 3,
+    CUSTOM: 4,
+    COMPETING: 5,
 };
 //# sourceMappingURL=constants.js.map

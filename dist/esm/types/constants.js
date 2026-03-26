@@ -46,4 +46,12 @@ export const Intents = {
     MESSAGE_CONTENT: 1 << 15,
     ALL: 0b1111111111111111,
 };
+export const ActivityTypes = {
+    PLAYING: 0,
+    STREAMING: 1,
+    LISTENING: 2,
+    WATCHING: 3,
+    CUSTOM: 4,
+    COMPETING: 5,
+};
 //# sourceMappingURL=constants.js.map
