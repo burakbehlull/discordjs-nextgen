@@ -1,0 +1,30 @@
+{
+  "name": "discordjs-nextgen",
+  "version": "0.1.0",
+  "description": "Simple and powerful Discord bot library",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build",
+    "start": "ts-node example/botv3.ts"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "library",
+    "discordjs-nextgen"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.0",
+    "@types/ws": "^8.5.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
