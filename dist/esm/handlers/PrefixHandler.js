@@ -1,5 +1,6 @@
 import { Cooldown } from '../utils/Cooldown';
 import { Permission } from '../utils/Permission';
+import { Context } from '../structures/Context';
 export class PrefixHandler {
     constructor(options = {}) {
         this.commands = new Map();
@@ -54,12 +55,13 @@ export class PrefixHandler {
             return;
         }
         cooldown?.set(message.author.id);
+        const ctx = new Context(message, args);
         try {
-            await cmd.run(message, args);
+            await cmd.run(ctx, args);
         }
         catch (err) {
             const error = err instanceof Error ? err.message : String(err);
-            await message.reply(`Komut çalıştırılırken hata oluştu: \`${error}\``).catch(() => null);
+            await ctx.reply(`Komut çalıştırılırken hata oluştu: \`${error}\``).catch(() => null);
         }
     }
 }

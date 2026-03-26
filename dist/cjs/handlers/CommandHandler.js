@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CommandHandler = void 0;
+const Context_1 = require("../structures/Context");
 class CommandHandler {
     constructor(options = {}) {
         this.commands = new Map();
@@ -23,18 +24,14 @@ class CommandHandler {
         const cmd = this.commands.get(interaction.commandName);
         if (!cmd)
             return;
+        const ctx = new Context_1.Context(interaction);
         try {
-            await cmd.run(interaction);
+            await cmd.run(ctx);
         }
         catch (err) {
             const error = err instanceof Error ? err.message : String(err);
             const msg = `Komut çalıştırılırken hata oluştu: \`${error}\``;
-            if (interaction.replied) {
-                await interaction.followUp({ content: msg, ephemeral: true }).catch(() => null);
-            }
-            else {
-                await interaction.reply({ content: msg, ephemeral: true }).catch(() => null);
-            }
+            await ctx.reply({ content: msg, ephemeral: true }).catch(() => null);
         }
     }
     getBuilders() {

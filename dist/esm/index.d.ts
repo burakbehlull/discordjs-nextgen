@@ -1,5 +1,6 @@
 export { App } from './client/App';
-export type { AppOptions, AppEvents, AppEvent } from './client/App';
+export type { AppOptions, AppEvents, AppEvent, HybridCommand } from './client/App';
+export { Context } from './structures/Context';
 export { EmbedBuilder } from './builders/EmbedBuilder';
 export { SlashCommandBuilder } from './builders/SlashCommandBuilder';
 export type { SlashCommandOption, SlashCommandOptionType } from './builders/SlashCommandBuilder';

@@ -1,8 +1,9 @@
 import type { Interaction } from '../structures/Interaction';
 import type { SlashCommandBuilder } from '../builders/SlashCommandBuilder';
+import { Context } from '../structures/Context';
 export interface SlashCommand {
     data: SlashCommandBuilder;
-    run: (interaction: Interaction) => Promise<void> | void;
+    run: (ctx: Context) => Promise<void> | void;
 }
 export interface CommandHandlerOptions {
     commands?: SlashCommand[];

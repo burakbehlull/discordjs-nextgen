@@ -5,9 +5,20 @@ import { User } from '../structures/User';
 import { Guild } from '../structures/Guild';
 import { Channel } from '../structures/Channel';
 import { Interaction } from '../structures/Interaction';
-import { SlashCommandBuilder } from '../builders/SlashCommandBuilder';
 import { type PrefixOptions } from '../handlers/PrefixHandler';
 import { type CommandHandlerOptions } from '../handlers/CommandHandler';
+import { SlashCommandBuilder, type SlashCommandOption } from '../builders/SlashCommandBuilder';
+import { type MiddlewareFunction } from '../utils/MiddlewareManager';
+import { Context } from '../structures/Context';
+export interface HybridCommand {
+    name: string;
+    description: string;
+    aliases?: string[];
+    cooldown?: number;
+    permissions?: any[];
+    options?: SlashCommandOption[];
+    run: (ctx: Context, args: string[]) => Promise<void> | void;
+}
 import type { PresenceData } from '../types/raw';
 import { Intents } from '../types/constants';
 export interface AppOptions {
@@ -41,6 +52,9 @@ export interface App {
     off<K extends keyof AppEvents>(event: K, listener: (...args: AppEvents[K]) => void): this;
     emit<K extends keyof AppEvents>(event: K, ...args: AppEvents[K]): boolean;
 }
+export interface HybridOptions extends Partial<Omit<HybridCommand, 'run' | 'name' | 'description'>> {
+    folder?: string;
+}
 export declare class App extends EventEmitter {
     private options;
     readonly rest: RESTClient;
@@ -51,6 +65,7 @@ export declare class App extends EventEmitter {
     private token;
     private prefixHandler;
     private commandHandler;
+    private middlewareManager;
     user: User | null;
     constructor(options?: AppOptions);
     private resolveIntents;
@@ -60,6 +75,14 @@ export declare class App extends EventEmitter {
     slash(options: string | (CommandHandlerOptions & {
         folder?: string;
     })): this;
+    use(fn: MiddlewareFunction | {
+        name: string;
+        setup: (app: App) => void;
+    }): this;
+    command(options: string | (HybridOptions & {
+        folder: string;
+    }) | HybridCommand): this;
+    private registerHybrid;
     commands(options: CommandHandlerOptions): this;
     events(folderPath: string): this;
     run(token: string): this;

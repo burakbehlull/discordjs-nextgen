@@ -1,4 +1,5 @@
 export { App } from './client/App';
+export { Context } from './structures/Context';
 export { EmbedBuilder } from './builders/EmbedBuilder';
 export { SlashCommandBuilder } from './builders/SlashCommandBuilder';
 export { ButtonBuilder, ActionRowBuilder } from './builders/ButtonBuilder';

@@ -15,6 +15,7 @@ class Interaction {
         this.commandName = data.data?.name ?? null;
         this.customId = data.data?.custom_id ?? null;
         this.rest = rest;
+        this.createdAt = new Date(Number((BigInt(this.id) >> 22n) + 1420070400000n));
         const rawUser = data.member?.user ?? data.user;
         if (!rawUser)
             throw new Error('Interaction has no user');
@@ -47,6 +48,9 @@ class Interaction {
     getBoolean(name) {
         const val = this.options.get(name);
         return val === undefined ? null : val;
+    }
+    get optionValues() {
+        return Array.from(this.options.values());
     }
     async reply(options) {
         if (this._replied)

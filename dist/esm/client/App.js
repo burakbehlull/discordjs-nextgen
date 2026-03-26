@@ -9,7 +9,10 @@ import { Interaction } from '../structures/Interaction';
 import { Logger } from '../utils/Logger';
 import { PrefixHandler } from '../handlers/PrefixHandler';
 import { CommandHandler } from '../handlers/CommandHandler';
+import { SlashCommandBuilder } from '../builders/SlashCommandBuilder';
 import { FileLoader } from '../utils/FileLoader';
+import { MiddlewareManager } from '../utils/MiddlewareManager';
+import { Context } from '../structures/Context';
 import { Intents } from '../types/constants';
 export class App extends EventEmitter {
     constructor(options = {}) {
@@ -22,6 +25,7 @@ export class App extends EventEmitter {
         this.token = null;
         this.prefixHandler = null;
         this.commandHandler = null;
+        this.middlewareManager = new MiddlewareManager();
         this.user = null;
         this.rest = new RESTClient('');
     }
@@ -48,7 +52,10 @@ export class App extends EventEmitter {
             this.prefixHandler = new PrefixHandler(options);
         }
         this.on('messageCreate', (message) => {
-            this.prefixHandler.handle(message).catch((err) => {
+            const ctx = new Context(message);
+            this.middlewareManager.run(ctx, async () => {
+                await this.prefixHandler.handle(message);
+            }).catch((err) => {
                 Logger.error(`Prefix handler hatası: ${err.message}`);
             });
         });
@@ -88,12 +95,70 @@ export class App extends EventEmitter {
         });
         this.on('interactionCreate', (interaction) => {
             if (this.commandHandler) {
-                this.commandHandler.handle(interaction).catch((err) => {
+                const ctx = new Context(interaction);
+                this.middlewareManager.run(ctx, async () => {
+                    await this.commandHandler.handle(interaction);
+                }).catch((err) => {
                     Logger.error(`Command handler hatası: ${err.message}`);
                 });
             }
         });
         return this;
+    }
+    use(fn) {
+        if (typeof fn === 'function') {
+            this.middlewareManager.use(fn);
+        }
+        else if (typeof fn === 'object' && 'setup' in fn) {
+            fn.setup(this);
+        }
+        return this;
+    }
+    command(options) {
+        if (typeof options === 'string' || (typeof options === 'object' && 'folder' in options)) {
+            const folderPath = typeof options === 'string' ? options : options.folder;
+            FileLoader.loadFiles(folderPath).then((cmds) => {
+                for (const cmd of cmds) {
+                    this.registerHybrid(cmd);
+                }
+                Logger.success(`${cmds.length} hybrid komutu [${folderPath}] klasöründen yüklendi.`);
+            });
+        }
+        else {
+            this.registerHybrid(options);
+        }
+        return this;
+    }
+    registerHybrid(cmd) {
+        // 1. Prefix olarak kaydet
+        if (!this.prefixHandler)
+            this.prefixHandler = new PrefixHandler();
+        this.prefixHandler.addCommand({
+            name: cmd.name,
+            aliases: cmd.aliases,
+            cooldown: cmd.cooldown,
+            permissions: cmd.permissions,
+            run: cmd.run
+        });
+        // 2. Slash olarak kaydet
+        if (!this.commandHandler)
+            this.commandHandler = new CommandHandler();
+        const slashBuilder = new SlashCommandBuilder()
+            .setName(cmd.name)
+            .setDescription(cmd.description);
+        if (cmd.options) {
+            for (const opt of cmd.options) {
+                slashBuilder.addOption(opt);
+            }
+        }
+        this.commandHandler.addCommand({
+            data: slashBuilder,
+            run: async (ctx) => {
+                // Slash'tan gelen seçenekleri argümanlara dönüştür
+                const args = ctx.interaction?.optionValues.map(v => String(v)) || [];
+                await cmd.run(ctx, args);
+            }
+        });
     }
     commands(options) {
         return this.slash(options);

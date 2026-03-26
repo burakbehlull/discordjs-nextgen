@@ -80,6 +80,10 @@ export class Interaction {
     return val === undefined ? null : (val as boolean);
   }
 
+  get optionValues(): (string | number | boolean)[] {
+    return Array.from(this.options.values());
+  }
+
   async reply(options: string | InteractionReplyOptions): Promise<void> {
     if (this._replied) throw new Error('Interaction already replied');
     const payload = this.resolveOptions(options);

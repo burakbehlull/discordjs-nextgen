@@ -12,7 +12,10 @@ const Interaction_1 = require("../structures/Interaction");
 const Logger_1 = require("../utils/Logger");
 const PrefixHandler_1 = require("../handlers/PrefixHandler");
 const CommandHandler_1 = require("../handlers/CommandHandler");
+const SlashCommandBuilder_1 = require("../builders/SlashCommandBuilder");
 const FileLoader_1 = require("../utils/FileLoader");
+const MiddlewareManager_1 = require("../utils/MiddlewareManager");
+const Context_1 = require("../structures/Context");
 const constants_1 = require("../types/constants");
 class App extends events_1.EventEmitter {
     constructor(options = {}) {
@@ -25,6 +28,7 @@ class App extends events_1.EventEmitter {
         this.token = null;
         this.prefixHandler = null;
         this.commandHandler = null;
+        this.middlewareManager = new MiddlewareManager_1.MiddlewareManager();
         this.user = null;
         this.rest = new RESTClient_1.RESTClient('');
     }
@@ -51,7 +55,10 @@ class App extends events_1.EventEmitter {
             this.prefixHandler = new PrefixHandler_1.PrefixHandler(options);
         }
         this.on('messageCreate', (message) => {
-            this.prefixHandler.handle(message).catch((err) => {
+            const ctx = new Context_1.Context(message);
+            this.middlewareManager.run(ctx, async () => {
+                await this.prefixHandler.handle(message);
+            }).catch((err) => {
                 Logger_1.Logger.error(`Prefix handler hatası: ${err.message}`);
             });
         });
@@ -91,12 +98,70 @@ class App extends events_1.EventEmitter {
         });
         this.on('interactionCreate', (interaction) => {
             if (this.commandHandler) {
-                this.commandHandler.handle(interaction).catch((err) => {
+                const ctx = new Context_1.Context(interaction);
+                this.middlewareManager.run(ctx, async () => {
+                    await this.commandHandler.handle(interaction);
+                }).catch((err) => {
                     Logger_1.Logger.error(`Command handler hatası: ${err.message}`);
                 });
             }
         });
         return this;
+    }
+    use(fn) {
+        if (typeof fn === 'function') {
+            this.middlewareManager.use(fn);
+        }
+        else if (typeof fn === 'object' && 'setup' in fn) {
+            fn.setup(this);
+        }
+        return this;
+    }
+    command(options) {
+        if (typeof options === 'string' || (typeof options === 'object' && 'folder' in options)) {
+            const folderPath = typeof options === 'string' ? options : options.folder;
+            FileLoader_1.FileLoader.loadFiles(folderPath).then((cmds) => {
+                for (const cmd of cmds) {
+                    this.registerHybrid(cmd);
+                }
+                Logger_1.Logger.success(`${cmds.length} hybrid komutu [${folderPath}] klasöründen yüklendi.`);
+            });
+        }
+        else {
+            this.registerHybrid(options);
+        }
+        return this;
+    }
+    registerHybrid(cmd) {
+        // 1. Prefix olarak kaydet
+        if (!this.prefixHandler)
+            this.prefixHandler = new PrefixHandler_1.PrefixHandler();
+        this.prefixHandler.addCommand({
+            name: cmd.name,
+            aliases: cmd.aliases,
+            cooldown: cmd.cooldown,
+            permissions: cmd.permissions,
+            run: cmd.run
+        });
+        // 2. Slash olarak kaydet
+        if (!this.commandHandler)
+            this.commandHandler = new CommandHandler_1.CommandHandler();
+        const slashBuilder = new SlashCommandBuilder_1.SlashCommandBuilder()
+            .setName(cmd.name)
+            .setDescription(cmd.description);
+        if (cmd.options) {
+            for (const opt of cmd.options) {
+                slashBuilder.addOption(opt);
+            }
+        }
+        this.commandHandler.addCommand({
+            data: slashBuilder,
+            run: async (ctx) => {
+                // Slash'tan gelen seçenekleri argümanlara dönüştür
+                const args = ctx.interaction?.optionValues.map(v => String(v)) || [];
+                await cmd.run(ctx, args);
+            }
+        });
     }
     commands(options) {
         return this.slash(options);

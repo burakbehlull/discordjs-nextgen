@@ -6,7 +6,6 @@ import { User } from '../structures/User';
 import { Guild } from '../structures/Guild';
 import { Channel } from '../structures/Channel';
 import { Interaction } from '../structures/Interaction';
-import { SlashCommandBuilder } from '../builders/SlashCommandBuilder';
 import { Logger } from '../utils/Logger';
 import { PrefixHandler, type PrefixOptions, type PrefixCommand } from '../handlers/PrefixHandler';
 import { CommandHandler, type CommandHandlerOptions, type SlashCommand } from '../handlers/CommandHandler';
@@ -214,8 +213,8 @@ export class App extends EventEmitter {
     this.commandHandler.addCommand({
       data: slashBuilder,
       run: async (ctx) => {
-        // Slash'tan gelen seçenekleri argümanlara dönüştür (isteğe bağlı)
-        const args = ctx.interaction?.options.data.map(o => String(o.value)) || [];
+        // Slash'tan gelen seçenekleri argümanlara dönüştür
+        const args = ctx.interaction?.optionValues.map(v => String(v)) || [];
         await cmd.run(ctx, args);
       }
     });

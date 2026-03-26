@@ -1,3 +1,4 @@
+import { Context } from '../structures/Context';
 export class CommandHandler {
     constructor(options = {}) {
         this.commands = new Map();
@@ -20,18 +21,14 @@ export class CommandHandler {
         const cmd = this.commands.get(interaction.commandName);
         if (!cmd)
             return;
+        const ctx = new Context(interaction);
         try {
-            await cmd.run(interaction);
+            await cmd.run(ctx);
         }
         catch (err) {
             const error = err instanceof Error ? err.message : String(err);
             const msg = `Komut çalıştırılırken hata oluştu: \`${error}\``;
-            if (interaction.replied) {
-                await interaction.followUp({ content: msg, ephemeral: true }).catch(() => null);
-            }
-            else {
-                await interaction.reply({ content: msg, ephemeral: true }).catch(() => null);
-            }
+            await ctx.reply({ content: msg, ephemeral: true }).catch(() => null);
         }
     }
     getBuilders() {

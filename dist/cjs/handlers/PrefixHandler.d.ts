@@ -1,12 +1,13 @@
 import type { Message } from '../structures/Message';
 import { type PermissionName } from '../utils/Permission';
+import { Context } from '../structures/Context';
 export interface PrefixCommand {
     name: string;
     description?: string;
     aliases?: string[];
     cooldown?: number;
     permissions?: PermissionName[];
-    run: (message: Message, args: string[]) => Promise<void> | void;
+    run: (ctx: Context, args: string[]) => Promise<void> | void;
 }
 export interface PrefixOptions {
     prefix?: string | string[];

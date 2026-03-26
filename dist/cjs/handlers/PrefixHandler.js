@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PrefixHandler = void 0;
 const Cooldown_1 = require("../utils/Cooldown");
 const Permission_1 = require("../utils/Permission");
+const Context_1 = require("../structures/Context");
 class PrefixHandler {
     constructor(options = {}) {
         this.commands = new Map();
@@ -57,12 +58,13 @@ class PrefixHandler {
             return;
         }
         cooldown?.set(message.author.id);
+        const ctx = new Context_1.Context(message, args);
         try {
-            await cmd.run(message, args);
+            await cmd.run(ctx, args);
         }
         catch (err) {
             const error = err instanceof Error ? err.message : String(err);
-            await message.reply(`Komut çalıştırılırken hata oluştu: \`${error}\``).catch(() => null);
+            await ctx.reply(`Komut çalıştırılırken hata oluştu: \`${error}\``).catch(() => null);
         }
     }
 }

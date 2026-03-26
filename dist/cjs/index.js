@@ -1,8 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GatewayEvents = exports.Intents = exports.CommandHandler = exports.PrefixHandler = exports.Permission = exports.Cooldown = exports.Logger = exports.Interaction = exports.Message = exports.Guild = exports.Channel = exports.User = exports.ActionRowBuilder = exports.ButtonBuilder = exports.SlashCommandBuilder = exports.EmbedBuilder = exports.App = void 0;
+exports.GatewayEvents = exports.Intents = exports.CommandHandler = exports.PrefixHandler = exports.Permission = exports.Cooldown = exports.Logger = exports.Interaction = exports.Message = exports.Guild = exports.Channel = exports.User = exports.ActionRowBuilder = exports.ButtonBuilder = exports.SlashCommandBuilder = exports.EmbedBuilder = exports.Context = exports.App = void 0;
 var App_1 = require("./client/App");
 Object.defineProperty(exports, "App", { enumerable: true, get: function () { return App_1.App; } });
+var Context_1 = require("./structures/Context");
+Object.defineProperty(exports, "Context", { enumerable: true, get: function () { return Context_1.Context; } });
 var EmbedBuilder_1 = require("./builders/EmbedBuilder");
 Object.defineProperty(exports, "EmbedBuilder", { enumerable: true, get: function () { return EmbedBuilder_1.EmbedBuilder; } });
 var SlashCommandBuilder_1 = require("./builders/SlashCommandBuilder");

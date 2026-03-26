@@ -19,6 +19,7 @@ export declare class Interaction {
     readonly commandName: string | null;
     readonly customId: string | null;
     readonly user: User;
+    readonly createdAt: Date;
     private options;
     private rest;
     private _replied;
@@ -31,6 +32,7 @@ export declare class Interaction {
     getString(name: string): string | null;
     getInteger(name: string): number | null;
     getBoolean(name: string): boolean | null;
+    get optionValues(): (string | number | boolean)[];
     reply(options: string | InteractionReplyOptions): Promise<void>;
     deferReply(ephemeral?: boolean): Promise<void>;
     editReply(options: string | InteractionReplyOptions): Promise<void>;
