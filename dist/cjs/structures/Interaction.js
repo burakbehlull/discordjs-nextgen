@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Interaction = void 0;
 const User_js_1 = require("./User.js");
+const Channel_js_1 = require("./Channel.js");
 class Interaction {
     constructor(data, rest) {
         this._replied = false;
@@ -16,6 +17,7 @@ class Interaction {
         this.customId = data.data?.custom_id ?? null;
         this.rest = rest;
         this.createdAt = new Date(Number((BigInt(this.id) >> 22n) + 1420070400000n));
+        this.memberPermissions = data.member?.permissions ?? null;
         const rawUser = data.member?.user ?? data.user;
         if (!rawUser)
             throw new Error('Interaction has no user');
@@ -38,6 +40,11 @@ class Interaction {
     }
     get deferred() {
         return this._deferred;
+    }
+    get channel() {
+        if (!this.channelId)
+            return null;
+        return new Channel_js_1.Channel({ id: this.channelId, type: 0, guild_id: this.guildId ?? undefined }, this.rest);
     }
     getString(name) {
         return this.options.get(name) ?? null;
@@ -75,6 +82,10 @@ class Interaction {
     async followUp(options) {
         const payload = this.resolveOptions(options);
         await this.rest.post(`/webhooks/${this.applicationId}/${this.token}`, payload);
+    }
+    async editReply(options) {
+        const payload = this.resolveOptions(options);
+        await this.rest.patch(`/webhooks/${this.applicationId}/${this.token}/messages/@original`, payload);
     }
     resolveOptions(options) {
         if (typeof options === 'string') {

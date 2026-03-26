@@ -1,6 +1,7 @@
 import type { RESTClient } from '../rest/RESTClient.js';
 import type { RawInteraction } from '../types/raw.js';
 import { User } from './User.js';
+import { Channel } from './Channel.js';
 import type { EmbedBuilder } from '../builders/EmbedBuilder.js';
 import type { ActionRowBuilder } from '../builders/ButtonBuilder.js';
 
@@ -22,6 +23,7 @@ export class Interaction {
   readonly customId: string | null;
   readonly user: User;
   readonly createdAt: Date;
+  readonly memberPermissions: string | null;
   private options: Map<string, string | number | boolean>;
   private rest: RESTClient;
   private _replied = false;
@@ -38,6 +40,7 @@ export class Interaction {
     this.customId = data.data?.custom_id ?? null;
     this.rest = rest;
     this.createdAt = new Date(Number((BigInt(this.id) >> 22n) + 1420070400000n));
+    this.memberPermissions = data.member?.permissions ?? null;
 
     const rawUser = data.member?.user ?? data.user;
     if (!rawUser) throw new Error('Interaction has no user');
@@ -65,6 +68,11 @@ export class Interaction {
 
   get deferred(): boolean {
     return this._deferred;
+  }
+
+  get channel(): Channel | null {
+    if (!this.channelId) return null;
+    return new Channel({ id: this.channelId, type: 0, guild_id: this.guildId ?? undefined }, this.rest);
   }
 
   getString(name: string): string | null {
@@ -107,6 +115,11 @@ export class Interaction {
   async followUp(options: string | InteractionReplyOptions): Promise<void> {
     const payload = this.resolveOptions(options);
     await this.rest.post(`/webhooks/${this.applicationId}/${this.token}`, payload);
+  }
+
+  async editReply(options: string | InteractionReplyOptions): Promise<void> {
+    const payload = this.resolveOptions(options);
+    await this.rest.patch(`/webhooks/${this.applicationId}/${this.token}/messages/@original`, payload);
   }
 
   private resolveOptions(options: string | InteractionReplyOptions): any {

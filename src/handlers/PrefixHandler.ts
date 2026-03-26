@@ -19,14 +19,30 @@ export interface PrefixOptions {
 }
 
 export class PrefixHandler {
-  private readonly prefixes: string[];
+  private prefixes: string[];
   private readonly commands: Map<string, PrefixCommand> = new Map();
   private readonly cooldowns: Map<string, Cooldown> = new Map();
-  private readonly ignoreBots: boolean;
+  private ignoreBots: boolean;
 
   constructor(options: Partial<PrefixOptions> = {}) {
     this.prefixes = Array.isArray(options.prefix) ? options.prefix : options.prefix ? [options.prefix] : ['!'];
     this.ignoreBots = options.ignoreBots ?? true;
+
+    if (options.commands) {
+      for (const cmd of options.commands) {
+        this.addCommand(cmd);
+      }
+    }
+  }
+
+  configure(options: Partial<PrefixOptions> = {}): void {
+    if (options.prefix !== undefined) {
+      this.prefixes = Array.isArray(options.prefix) ? options.prefix : [options.prefix];
+    }
+
+    if (options.ignoreBots !== undefined) {
+      this.ignoreBots = options.ignoreBots;
+    }
 
     if (options.commands) {
       for (const cmd of options.commands) {

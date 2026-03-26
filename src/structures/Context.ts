@@ -35,6 +35,31 @@ export class Context {
     }
   }
 
+  async deferReply(ephemeral = false): Promise<void> {
+    if (!this.isInteraction) {
+      throw new Error('deferReply sadece interaction contextinde kullanilabilir.');
+    }
+
+    await (this.source as Interaction).deferReply(ephemeral);
+  }
+
+  async followUp(options: string | MessageReplyOptions | InteractionReplyOptions): Promise<void> {
+    if (this.isInteraction) {
+      await (this.source as Interaction).followUp(options as string | InteractionReplyOptions);
+      return;
+    }
+
+    await (this.source as Message).reply(options as string | MessageReplyOptions);
+  }
+
+  async editReply(options: string | InteractionReplyOptions): Promise<void> {
+    if (!this.isInteraction) {
+      throw new Error('editReply sadece interaction contextinde kullanilabilir.');
+    }
+
+    await (this.source as Interaction).editReply(options);
+  }
+
   get author(): User {
     return this.user;
   }
@@ -49,5 +74,19 @@ export class Context {
 
   get createdAt(): Date {
     return this.isInteraction ? (this.source as Interaction).createdAt : (this.source as Message).createdAt;
+  }
+
+  get commandName(): string | null {
+    return this.interaction?.commandName ?? null;
+  }
+
+  get customId(): string | null {
+    return this.interaction?.customId ?? null;
+  }
+
+  get memberPermissions(): string | null {
+    return this.isInteraction
+      ? (this.source as Interaction).memberPermissions
+      : (this.source as Message).memberPermissions;
   }
 }

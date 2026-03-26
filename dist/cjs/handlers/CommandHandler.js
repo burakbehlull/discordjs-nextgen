@@ -12,6 +12,16 @@ class CommandHandler {
             }
         }
     }
+    configure(options = {}) {
+        if (options.guildId !== undefined) {
+            this.guildId = options.guildId;
+        }
+        if (options.commands) {
+            for (const cmd of options.commands) {
+                this.addCommand(cmd);
+            }
+        }
+    }
     addCommand(cmd) {
         const name = cmd.data.toJSON().name;
         this.commands.set(name, cmd);

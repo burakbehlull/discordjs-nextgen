@@ -11,8 +11,9 @@ export interface CommandHandlerOptions {
 }
 export declare class CommandHandler {
     readonly commands: Map<string, SlashCommand>;
-    readonly guildId: string | undefined;
+    guildId: string | undefined;
     constructor(options?: Partial<CommandHandlerOptions>);
+    configure(options?: Partial<CommandHandlerOptions>): void;
     addCommand(cmd: SlashCommand): void;
     handle(interaction: Interaction): Promise<void>;
     getBuilders(): SlashCommandBuilder[];

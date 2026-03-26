@@ -7,9 +7,12 @@ import { Channel } from '../structures/Channel.js';
 import { Interaction } from '../structures/Interaction.js';
 import { type PrefixOptions } from '../handlers/PrefixHandler.js';
 import { type CommandHandlerOptions } from '../handlers/CommandHandler.js';
+import { type ButtonHandler, type ButtonHandlerOptions } from '../handlers/ButtonHandler.js';
 import { SlashCommandBuilder, type SlashCommandOption } from '../builders/SlashCommandBuilder.js';
 import { type MiddlewareFunction } from '../utils/MiddlewareManager.js';
 import { Context } from '../structures/Context.js';
+import type { PresenceData } from '../types/raw.js';
+import { Intents } from '../types/constants.js';
 export interface HybridCommand {
     name: string;
     description: string;
@@ -19,8 +22,6 @@ export interface HybridCommand {
     options?: SlashCommandOption[];
     run: (ctx: Context, args: string[]) => Promise<void> | void;
 }
-import type { PresenceData } from '../types/raw.js';
-import { Intents } from '../types/constants.js';
 export interface AppOptions {
     intents?: number | (keyof typeof Intents)[];
     presence?: PresenceData;
@@ -46,6 +47,10 @@ export interface AppEvent<K extends keyof AppEvents = keyof AppEvents> {
     once?: boolean;
     run: (...args: AppEvents[K]) => Promise<void> | void;
 }
+export interface AppPlugin {
+    name: string;
+    setup: (app: App) => void;
+}
 export interface App {
     on<K extends keyof AppEvents>(event: K, listener: (...args: AppEvents[K]) => void): this;
     once<K extends keyof AppEvents>(event: K, listener: (...args: AppEvents[K]) => void): this;
@@ -65,7 +70,11 @@ export declare class App extends EventEmitter {
     private token;
     private prefixHandler;
     private commandHandler;
+    private buttonHandler;
     private middlewareManager;
+    private prefixBound;
+    private interactionBound;
+    private readyBound;
     user: User | null;
     constructor(options?: AppOptions);
     private resolveIntents;
@@ -75,18 +84,21 @@ export declare class App extends EventEmitter {
     slash(options: string | (CommandHandlerOptions & {
         folder?: string;
     })): this;
-    use(fn: MiddlewareFunction | {
-        name: string;
-        setup: (app: App) => void;
-    }): this;
+    button(options: string | ButtonHandler | (ButtonHandlerOptions & {
+        folder?: string;
+    })): this;
+    buttons(options: string | ButtonHandler | (ButtonHandlerOptions & {
+        folder?: string;
+    })): this;
+    use(fn: MiddlewareFunction | AppPlugin): this;
     command(options: string | (HybridOptions & {
         folder: string;
     }) | HybridCommand): this;
-    private registerHybrid;
     commands(options: CommandHandlerOptions): this;
     events(folderPath: string): this;
     run(token: string): this;
     login(token: string): this;
+    private registerHybrid;
     private handleDispatch;
     fetchUser(userId: string): Promise<User>;
     fetchChannel(channelId: string): Promise<Channel>;
@@ -94,5 +106,9 @@ export declare class App extends EventEmitter {
     registerCommands(commands: SlashCommandBuilder[], guildId?: string): Promise<void>;
     setPresence(presence: PresenceData): void;
     destroy(): void;
+    private bindPrefixListener;
+    private bindInteractionListener;
+    private bindReadyListener;
+    private syncApplicationCommands;
 }
 //# sourceMappingURL=App.d.ts.map

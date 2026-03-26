@@ -9,11 +9,13 @@ import { Interaction } from '../structures/Interaction.js';
 import { Logger } from '../utils/Logger.js';
 import { PrefixHandler, type PrefixOptions, type PrefixCommand } from '../handlers/PrefixHandler.js';
 import { CommandHandler, type CommandHandlerOptions, type SlashCommand } from '../handlers/CommandHandler.js';
+import { ButtonHandlerManager, type ButtonHandler, type ButtonHandlerOptions } from '../handlers/ButtonHandler.js';
 import { SlashCommandBuilder, type SlashCommandOption } from '../builders/SlashCommandBuilder.js';
 import { FileLoader } from '../utils/FileLoader.js';
 import { MiddlewareManager, type MiddlewareFunction } from '../utils/MiddlewareManager.js';
 import { Context } from '../structures/Context.js';
-import path from 'path';
+import type { PresenceData, RawMessage, RawGuild, RawInteraction, RawUser, RawChannel } from '../types/raw.js';
+import { Intents } from '../types/constants.js';
 
 export interface HybridCommand {
   name: string;
@@ -24,8 +26,6 @@ export interface HybridCommand {
   options?: SlashCommandOption[];
   run: (ctx: Context, args: string[]) => Promise<void> | void;
 }
-import type { PresenceData, RawMessage, RawGuild, RawInteraction, RawUser, RawChannel } from '../types/raw.js';
-import { Intents } from '../types/constants.js';
 
 export interface AppOptions {
   intents?: number | (keyof typeof Intents)[];
@@ -49,6 +49,11 @@ export interface AppEvent<K extends keyof AppEvents = keyof AppEvents> {
   run: (...args: AppEvents[K]) => Promise<void> | void;
 }
 
+export interface AppPlugin {
+  name: string;
+  setup: (app: App) => void;
+}
+
 export interface App {
   on<K extends keyof AppEvents>(event: K, listener: (...args: AppEvents[K]) => void): this;
   once<K extends keyof AppEvents>(event: K, listener: (...args: AppEvents[K]) => void): this;
@@ -70,7 +75,11 @@ export class App extends EventEmitter {
   private token: string | null = null;
   private prefixHandler: PrefixHandler | null = null;
   private commandHandler: CommandHandler | null = null;
+  private buttonHandler: ButtonHandlerManager | null = null;
   private middlewareManager: MiddlewareManager = new MiddlewareManager();
+  private prefixBound = false;
+  private interactionBound = false;
+  private readyBound = false;
   user: User | null = null;
 
   constructor(private options: AppOptions = {}) {
@@ -85,85 +94,90 @@ export class App extends EventEmitter {
   }
 
   prefix(options: string | (PrefixOptions & { folder?: string })): this {
+    if (!this.prefixHandler) {
+      this.prefixHandler = new PrefixHandler(typeof options === 'object' ? options : {});
+    } else if (typeof options === 'object') {
+      this.prefixHandler.configure(options);
+    }
+
     if (typeof options === 'string' || (typeof options === 'object' && 'folder' in options)) {
       const folderPath = typeof options === 'string' ? options : options.folder!;
-      const prefixOptions = typeof options === 'object' ? options : {};
-      
-      if (!this.prefixHandler) this.prefixHandler = new PrefixHandler(prefixOptions);
-      
+
       FileLoader.loadFiles<PrefixCommand>(folderPath).then((cmds) => {
         for (const cmd of cmds) {
           this.prefixHandler!.addCommand(cmd);
         }
-        Logger.success(`${cmds.length} prefix komutu [${folderPath}] klasöründen yüklendi.`);
+        Logger.success(`${cmds.length} prefix komutu [${folderPath}] klasorunden yuklendi.`);
+      }).catch((err: Error) => {
+        Logger.error(`Prefix komutlari yuklenemedi: ${err.message}`);
       });
-    } else {
-      this.prefixHandler = new PrefixHandler(options);
     }
 
-    this.on('messageCreate', (message) => {
-      const ctx = new Context(message);
-      this.middlewareManager.run(ctx, async () => {
-        await this.prefixHandler!.handle(message);
-      }).catch((err: Error) => {
-        Logger.error(`Prefix handler hatası: ${err.message}`);
-      });
-    });
+    this.bindPrefixListener();
     return this;
   }
 
   slash(options: string | (CommandHandlerOptions & { folder?: string })): this {
+    if (!this.commandHandler) {
+      this.commandHandler = new CommandHandler(typeof options === 'object' ? options : {});
+    } else if (typeof options === 'object') {
+      this.commandHandler.configure(options);
+    }
+
     if (typeof options === 'string' || (typeof options === 'object' && 'folder' in options)) {
       const folderPath = typeof options === 'string' ? options : options.folder!;
       const guildId = typeof options === 'object' ? options.guildId : undefined;
-      
-      if (!this.commandHandler) this.commandHandler = new CommandHandler({ guildId });
 
       FileLoader.loadFiles<SlashCommand>(folderPath).then((cmds) => {
         for (const cmd of cmds) {
           this.commandHandler!.addCommand(cmd);
         }
-        Logger.success(`${cmds.length} slash komutu [${folderPath}] klasöründen yüklendi.`);
-        
-        // Eğer bot hazırsa hemen kaydet, değilse ready beklet
-        if (this.user) {
-          this.registerCommands(this.commandHandler!.getBuilders(), guildId);
-        }
+        Logger.success(`${cmds.length} slash komutu [${folderPath}] klasorunden yuklendi.`);
+        void this.syncApplicationCommands(guildId);
+      }).catch((err: Error) => {
+        Logger.error(`Slash komutlari yuklenemedi: ${err.message}`);
       });
-    } else {
-      this.commandHandler = new CommandHandler(options);
     }
 
-    this.once('ready', async () => {
-      if (this.commandHandler) {
-        try {
-          await this.registerCommands(
-            this.commandHandler.getBuilders(),
-            (options as CommandHandlerOptions).guildId
-          );
-          Logger.success(`${this.commandHandler.commands.size} slash komut kaydedildi.`);
-        } catch (err) {
-          const error = err instanceof Error ? err.message : String(err);
-          Logger.error(`Slash komutlar kaydedilemedi: ${error}`);
-        }
-      }
-    });
-
-    this.on('interactionCreate', (interaction) => {
-      if (this.commandHandler) {
-        const ctx = new Context(interaction);
-        this.middlewareManager.run(ctx, async () => {
-          await this.commandHandler!.handle(interaction);
-        }).catch((err: Error) => {
-          Logger.error(`Command handler hatası: ${err.message}`);
-        });
-      }
-    });
-
+    this.bindReadyListener();
+    this.bindInteractionListener();
     return this;
   }
 
-  use(fn: MiddlewareFunction | { name: string; setup: (app: App) => void }): this {
+  button(options: string | ButtonHandler | (ButtonHandlerOptions & { folder?: string })): this {
+    if (!this.buttonHandler) {
+      this.buttonHandler = new ButtonHandlerManager(
+        typeof options === 'object' && !('run' in options) ? options : {}
+      );
+    }
+
+    if (typeof options === 'string' || (typeof options === 'object' && 'folder' in options)) {
+      const folderPath = typeof options === 'string' ? options : options.folder!;
+
+      FileLoader.loadFiles<ButtonHandler>(folderPath).then((buttons) => {
+        for (const button of buttons) {
+          this.buttonHandler!.addButton(button);
+        }
+
+        Logger.success(`${buttons.length} button handler [${folderPath}] klasorunden yuklendi.`);
+      }).catch((err: Error) => {
+        Logger.error(`Button handlerlari yuklenemedi: ${err.message}`);
+      });
+    } else if ('run' in options) {
+      this.buttonHandler.addButton(options);
+    } else if ('buttons' in options && options.buttons) {
+      this.buttonHandler.addButtons(options.buttons);
+    }
+
+    this.bindInteractionListener();
+    return this;
+  }
+
+  buttons(options: string | ButtonHandler | (ButtonHandlerOptions & { folder?: string })): this {
+    return this.button(options);
+  }
+
+  use(fn: MiddlewareFunction | AppPlugin): this {
     if (typeof fn === 'function') {
       this.middlewareManager.use(fn);
     } else if (typeof fn === 'object' && 'setup' in fn) {
@@ -179,45 +193,14 @@ export class App extends EventEmitter {
         for (const cmd of cmds) {
           this.registerHybrid(cmd);
         }
-        Logger.success(`${cmds.length} hybrid komutu [${folderPath}] klasöründen yüklendi.`);
+        Logger.success(`${cmds.length} hybrid komutu [${folderPath}] klasorunden yuklendi.`);
+      }).catch((err: Error) => {
+        Logger.error(`Hybrid komutlari yuklenemedi: ${err.message}`);
       });
     } else {
       this.registerHybrid(options as HybridCommand);
     }
     return this;
-  }
-
-  private registerHybrid(cmd: HybridCommand): void {
-    // 1. Prefix olarak kaydet
-    if (!this.prefixHandler) this.prefixHandler = new PrefixHandler();
-    this.prefixHandler.addCommand({
-      name: cmd.name,
-      aliases: cmd.aliases,
-      cooldown: cmd.cooldown,
-      permissions: cmd.permissions as any,
-      run: cmd.run
-    });
-
-    // 2. Slash olarak kaydet
-    if (!this.commandHandler) this.commandHandler = new CommandHandler();
-    const slashBuilder = new SlashCommandBuilder()
-      .setName(cmd.name)
-      .setDescription(cmd.description);
-    
-    if (cmd.options) {
-      for (const opt of cmd.options) {
-        slashBuilder.addOption(opt);
-      }
-    }
-
-    this.commandHandler.addCommand({
-      data: slashBuilder,
-      run: async (ctx) => {
-        // Slash'tan gelen seçenekleri argümanlara dönüştür
-        const args = ctx.interaction?.optionValues.map(v => String(v)) || [];
-        await cmd.run(ctx, args);
-      }
-    });
   }
 
   commands(options: CommandHandlerOptions): this {
@@ -233,7 +216,9 @@ export class App extends EventEmitter {
           this.on(event.name, (...args) => event.run(...args));
         }
       }
-      Logger.success(`${events.length} event [${folderPath}] klasöründen yüklendi.`);
+      Logger.success(`${events.length} event [${folderPath}] klasorunden yuklendi.`);
+    }).catch((err: Error) => {
+      Logger.error(`Eventler yuklenemedi: ${err.message}`);
     });
     return this;
   }
@@ -242,7 +227,7 @@ export class App extends EventEmitter {
     this.token = token.startsWith('Bot ') ? token.slice(4) : token;
 
     if (!this.token || this.token.trim() === '' || this.token === 'TOKEN_BURAYA') {
-      throw new Error('[discordjs-nextgen] Geçerli bir bot tokeni girilmedi. app.run("TOKEN") ile tokeni ver.');
+      throw new Error('[discordjs-nextgen] Gecerli bir bot tokeni girilmedi. app.run("TOKEN") ile tokeni ver.');
     }
 
     this.rest.setToken(this.token);
@@ -269,12 +254,47 @@ export class App extends EventEmitter {
     return this.run(token);
   }
 
+  private registerHybrid(cmd: HybridCommand): void {
+    if (!this.prefixHandler) this.prefixHandler = new PrefixHandler();
+    this.prefixHandler.addCommand({
+      name: cmd.name,
+      aliases: cmd.aliases,
+      cooldown: cmd.cooldown,
+      permissions: cmd.permissions as any,
+      run: cmd.run,
+    });
+
+    if (!this.commandHandler) this.commandHandler = new CommandHandler();
+    const slashBuilder = new SlashCommandBuilder()
+      .setName(cmd.name)
+      .setDescription(cmd.description);
+
+    if (cmd.options) {
+      for (const opt of cmd.options) {
+        slashBuilder.addOption(opt);
+      }
+    }
+
+    this.commandHandler.addCommand({
+      data: slashBuilder,
+      run: async (ctx) => {
+        const args = ctx.interaction?.optionValues.map((value) => String(value)) || [];
+        await cmd.run(ctx, args);
+      },
+    });
+
+    this.bindPrefixListener();
+    this.bindInteractionListener();
+    this.bindReadyListener();
+    void this.syncApplicationCommands();
+  }
+
   private handleDispatch(event: string, data: unknown): void {
     switch (event) {
       case 'READY': {
-        const d = data as { user: RawUser };
-        this.user = new User(d.user);
-        Logger.success(`${this.user.tag} olarak giriş yapıldı.`);
+        const readyData = data as { user: RawUser };
+        this.user = new User(readyData.user);
+        Logger.success(`${this.user.tag} olarak giris yapildi.`);
         this.emit('ready', this.user);
         break;
       }
@@ -292,11 +312,11 @@ export class App extends EventEmitter {
       }
 
       case 'MESSAGE_DELETE': {
-        const d = data as { id: string; channel_id: string; guild_id?: string };
+        const deleteData = data as { id: string; channel_id: string; guild_id?: string };
         this.emit('messageDelete', {
-          id: d.id,
-          channelId: d.channel_id,
-          guildId: d.guild_id,
+          id: deleteData.id,
+          channelId: deleteData.channel_id,
+          guildId: deleteData.guild_id,
         });
         break;
       }
@@ -304,17 +324,17 @@ export class App extends EventEmitter {
       case 'GUILD_CREATE': {
         const guild = new Guild(data as RawGuild, this.rest);
         this.guilds.set(guild.id, guild);
-        for (const [id, ch] of guild.channels) {
-          this.channels.set(id, ch);
+        for (const [id, channel] of guild.channels) {
+          this.channels.set(id, channel);
         }
         this.emit('guildCreate', guild);
         break;
       }
 
       case 'GUILD_DELETE': {
-        const d = data as { id: string };
-        this.guilds.delete(d.id);
-        this.emit('guildDelete', { id: d.id });
+        const guildDeleteData = data as { id: string };
+        this.guilds.delete(guildDeleteData.id);
+        this.emit('guildDelete', { id: guildDeleteData.id });
         break;
       }
 
@@ -347,10 +367,7 @@ export class App extends EventEmitter {
     return guild;
   }
 
-  async registerCommands(
-    commands: SlashCommandBuilder[],
-    guildId?: string
-  ): Promise<void> {
+  async registerCommands(commands: SlashCommandBuilder[], guildId?: string): Promise<void> {
     if (!this.user) throw new Error('Client not logged in yet. Call this after the ready event.');
     const path = guildId
       ? `/applications/${this.user.id}/guilds/${guildId}/commands`
@@ -358,7 +375,7 @@ export class App extends EventEmitter {
 
     await this.rest.request(path, {
       method: 'PUT',
-      body: commands.map((c) => c.toJSON()),
+      body: commands.map((command) => command.toJSON()),
     });
   }
 
@@ -371,5 +388,65 @@ export class App extends EventEmitter {
     this.gateway = null;
     this.token = null;
     this.user = null;
+  }
+
+  private bindPrefixListener(): void {
+    if (this.prefixBound) return;
+    this.prefixBound = true;
+
+    this.on('messageCreate', (message) => {
+      if (!this.prefixHandler) return;
+
+      const ctx = new Context(message);
+      this.middlewareManager.run(ctx, async () => {
+        await this.prefixHandler!.handle(message);
+      }).catch((err: Error) => {
+        Logger.error(`Prefix handler hatasi: ${err.message}`);
+      });
+    });
+  }
+
+  private bindInteractionListener(): void {
+    if (this.interactionBound) return;
+    this.interactionBound = true;
+
+    this.on('interactionCreate', (interaction) => {
+      const runner = async (): Promise<void> => {
+        if (this.buttonHandler && interaction.isButton) {
+          const handled = await this.buttonHandler.handle(interaction);
+          if (handled) return;
+        }
+
+        if (this.commandHandler) {
+          await this.commandHandler.handle(interaction);
+        }
+      };
+
+      const ctx = new Context(interaction);
+      this.middlewareManager.run(ctx, runner).catch((err: Error) => {
+        Logger.error(`Interaction handler hatasi: ${err.message}`);
+      });
+    });
+  }
+
+  private bindReadyListener(): void {
+    if (this.readyBound) return;
+    this.readyBound = true;
+
+    this.once('ready', async () => {
+      await this.syncApplicationCommands(this.commandHandler?.guildId);
+    });
+  }
+
+  private async syncApplicationCommands(guildId?: string): Promise<void> {
+    if (!this.user || !this.commandHandler) return;
+
+    try {
+      await this.registerCommands(this.commandHandler.getBuilders(), guildId ?? this.commandHandler.guildId);
+      Logger.success(`${this.commandHandler.commands.size} slash komut kaydedildi.`);
+    } catch (err) {
+      const error = err instanceof Error ? err.message : String(err);
+      Logger.error(`Slash komutlar kaydedilemedi: ${error}`);
+    }
   }
 }

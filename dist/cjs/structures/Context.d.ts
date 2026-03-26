@@ -14,9 +14,15 @@ export declare class Context {
     readonly args: string[];
     constructor(source: Message | Interaction, args?: string[]);
     reply(options: string | MessageReplyOptions | InteractionReplyOptions): Promise<void>;
+    deferReply(ephemeral?: boolean): Promise<void>;
+    followUp(options: string | MessageReplyOptions | InteractionReplyOptions): Promise<void>;
+    editReply(options: string | InteractionReplyOptions): Promise<void>;
     get author(): User;
     get message(): Message | null;
     get interaction(): Interaction | null;
     get createdAt(): Date;
+    get commandName(): string | null;
+    get customId(): string | null;
+    get memberPermissions(): string | null;
 }
 //# sourceMappingURL=Context.d.ts.map

@@ -14,10 +14,22 @@ export interface CommandHandlerOptions {
 
 export class CommandHandler {
   readonly commands: Map<string, SlashCommand> = new Map();
-  readonly guildId: string | undefined;
+  guildId: string | undefined;
 
   constructor(options: Partial<CommandHandlerOptions> = {}) {
     this.guildId = options.guildId;
+    if (options.commands) {
+      for (const cmd of options.commands) {
+        this.addCommand(cmd);
+      }
+    }
+  }
+
+  configure(options: Partial<CommandHandlerOptions> = {}): void {
+    if (options.guildId !== undefined) {
+      this.guildId = options.guildId;
+    }
+
     if (options.commands) {
       for (const cmd of options.commands) {
         this.addCommand(cmd);

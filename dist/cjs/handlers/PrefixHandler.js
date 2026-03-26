@@ -16,6 +16,19 @@ class PrefixHandler {
             }
         }
     }
+    configure(options = {}) {
+        if (options.prefix !== undefined) {
+            this.prefixes = Array.isArray(options.prefix) ? options.prefix : [options.prefix];
+        }
+        if (options.ignoreBots !== undefined) {
+            this.ignoreBots = options.ignoreBots;
+        }
+        if (options.commands) {
+            for (const cmd of options.commands) {
+                this.addCommand(cmd);
+            }
+        }
+    }
     addCommand(cmd) {
         this.commands.set(cmd.name.toLowerCase(), cmd);
         for (const alias of cmd.aliases ?? []) {

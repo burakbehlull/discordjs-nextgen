@@ -25,6 +25,25 @@ class Context {
             await message.reply(options);
         }
     }
+    async deferReply(ephemeral = false) {
+        if (!this.isInteraction) {
+            throw new Error('deferReply sadece interaction contextinde kullanilabilir.');
+        }
+        await this.source.deferReply(ephemeral);
+    }
+    async followUp(options) {
+        if (this.isInteraction) {
+            await this.source.followUp(options);
+            return;
+        }
+        await this.source.reply(options);
+    }
+    async editReply(options) {
+        if (!this.isInteraction) {
+            throw new Error('editReply sadece interaction contextinde kullanilabilir.');
+        }
+        await this.source.editReply(options);
+    }
     get author() {
         return this.user;
     }
@@ -36,6 +55,17 @@ class Context {
     }
     get createdAt() {
         return this.isInteraction ? this.source.createdAt : this.source.createdAt;
+    }
+    get commandName() {
+        return this.interaction?.commandName ?? null;
+    }
+    get customId() {
+        return this.interaction?.customId ?? null;
+    }
+    get memberPermissions() {
+        return this.isInteraction
+            ? this.source.memberPermissions
+            : this.source.memberPermissions;
     }
 }
 exports.Context = Context;

@@ -12,6 +12,7 @@ export { Logger } from './utils/Logger.js';
 export { Cooldown } from './utils/Cooldown.js';
 export { Permission } from './utils/Permission.js';
 export { PrefixHandler } from './handlers/PrefixHandler.js';
+export { ButtonHandlerManager } from './handlers/ButtonHandler.js';
 export { CommandHandler } from './handlers/CommandHandler.js';
 export { Intents, GatewayEvents } from './types/constants.js';
 //# sourceMappingURL=index.js.map

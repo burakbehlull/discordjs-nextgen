@@ -15,11 +15,12 @@ export interface PrefixOptions {
     ignoreBots?: boolean;
 }
 export declare class PrefixHandler {
-    private readonly prefixes;
+    private prefixes;
     private readonly commands;
     private readonly cooldowns;
-    private readonly ignoreBots;
+    private ignoreBots;
     constructor(options?: Partial<PrefixOptions>);
+    configure(options?: Partial<PrefixOptions>): void;
     addCommand(cmd: PrefixCommand): void;
     handle(message: Message): Promise<void>;
 }
