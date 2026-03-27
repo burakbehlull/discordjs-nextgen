@@ -240,6 +240,37 @@ const feedbackModal = Modal.create('feedback_form')
 export default feedbackModal;
 ```
 
+### Seçim Menüsü (Select Menu)
+Tüm Select Menu tiplerini (String, User, Role, Channel, Mentionable) tek bir sınıf ile yönetin.
+
+`selects/color.ts`
+```typescript
+import { Select } from 'discordjs-nextgen';
+
+const colorSelect = Select.create('color_pick')
+  .placeholder('Bir renk seçin')
+  .options([
+    { label: 'Kırmızı', value: 'red' },
+    { label: 'Mavi', value: 'blue' }
+  ])
+  .onSelect(async (ctx) => {
+    const selected = ctx.values.color_pick; // "red" veya "blue"
+    await ctx.reply(`Seçilen renk: ${selected}`);
+  });
+
+export default colorSelect;
+```
+
+**Kullanıcı Seçimi Örneği:**
+```typescript
+Select.create('user_pick', { type: 'user' })
+  .placeholder('Bir kullanıcı seç')
+  .onSelect(async (ctx) => {
+    const userId = ctx.values.user_pick;
+    await ctx.reply(`Seçilen kullanıcı: <@${userId}>`);
+  });
+```
+
 ### Prefix Komutu (Özel Ayarlar)
 `commands/prefix/admin.ts`
 ```typescript
@@ -348,6 +379,8 @@ app.on('ready', () => {
 - `.slash({ folder, guildId? })`: Slash komutlarını klasörden yükler.
 - `.button({ folder })`: Klasörden buton işleyicilerini yükler.
 - `.button(customId, callback)`: Fluent API ile inline buton işleyicisi tanımlar.
+- `.select({ folder })`: Klasörden select menu işleyicilerini yükler.
+- `.select(selectInstance)`: Bir `Select` nesnesini doğrudan kaydeder.
 - `.modal({ folder })`: Klasörden modal işleyicilerini yükler.
 - `.modal(modalInstance)`: Bir `Modal` nesnesini doğrudan kaydeder.
 - `.events(folder)`: Belirtilen klasördeki event dosyalarını yükler.

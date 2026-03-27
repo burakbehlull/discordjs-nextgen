@@ -27,15 +27,17 @@ export class Interaction {
   readonly user: User;
   readonly createdAt: Date;
   readonly memberPermissions: string | null;
-  public values: Record<string, string> = {};
+  public values: Record<string, any> = {};
   public _usedPrefix: string | null = null;
   readonly member: Member | null;
   private options: Map<string, string | number | boolean>;
   private rest: RESTClient;
   private _replied = false;
   private _deferred = false;
+  private _raw: RawInteraction;
 
   constructor(data: RawInteraction, rest: RESTClient) {
+    this._raw = data;
     this.id = data.id;
     this.applicationId = data.application_id;
     this.type = data.type;
@@ -60,6 +62,10 @@ export class Interaction {
       }
     }
 
+    if (data.data?.values && this.customId) {
+      this.values[this.customId] = data.data.values.length === 1 ? data.data.values[0] : data.data.values;
+    }
+
     if (data.data?.components) {
       for (const row of data.data.components) {
         if (!row.components) continue;
@@ -82,6 +88,14 @@ export class Interaction {
 
   get isModalSubmit(): boolean {
     return this.type === 5;
+  }
+
+  get isSelectMenu(): boolean {
+    return this.type === 3 && [3, 5, 6, 7, 8].includes(this.componentType);
+  }
+
+  get componentType(): number {
+    return (this._raw.data as any)?.component_type ?? 0;
   }
 
   get replied(): boolean {

@@ -3,11 +3,13 @@ export type { AppOptions, AppEvents, AppEvent, AppPlugin, HybridCommand } from '
 
 export { Context } from './structures/Context.js';
 export { EmbedBuilder } from './builders/EmbedBuilder.js';
-export { SlashCommandBuilder } from './builders/SlashCommandBuilder.js';
 export type { SlashCommandOption, SlashCommandOptionType } from './builders/SlashCommandBuilder.js';
 export { ButtonBuilder, ActionRowBuilder } from './builders/ButtonBuilder.js';
 export type { ButtonStyle } from './builders/ButtonBuilder.js';
 export { Modal } from './builders/ModalBuilder.js';
+export { Select } from './builders/SelectBuilder.js';
+export type { SelectOption, SelectType, SelectConfig } from './builders/SelectBuilder.js';
+export { SlashCommandBuilder } from './builders/SlashCommandBuilder.js';
 
 export { User } from './structures/User.js';
 export { Channel } from './structures/Channel.js';

@@ -122,7 +122,7 @@ export class Context {
     return this.interaction?.isModalSubmit ?? false;
   }
 
-  get values(): Record<string, string> | null {
+  get values(): Record<string, any> | null {
     return this.interaction?.values ?? null;
   }
 

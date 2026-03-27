@@ -11,7 +11,9 @@ import { PrefixHandler, type PrefixOptions, type PrefixCommand } from '../handle
 import { CommandHandler, type CommandHandlerOptions, type SlashCommand } from '../handlers/CommandHandler.js';
 import { ButtonHandlerManager, type ButtonHandler, type ButtonHandlerOptions } from '../handlers/ButtonHandler.js';
 import { ModalHandlerManager } from '../handlers/ModalHandler.js';
+import { SelectHandlerManager, type SelectHandlerOptions } from '../handlers/SelectHandler.js';
 import { Modal } from '../builders/ModalBuilder.js';
+import { Select, type SelectConfig } from '../builders/SelectBuilder.js';
 import { SlashCommandBuilder, type SlashCommandOption } from '../builders/SlashCommandBuilder.js';
 import { FileLoader } from '../utils/FileLoader.js';
 import { MiddlewareManager, type MiddlewareFunction } from '../utils/MiddlewareManager.js';
@@ -82,6 +84,7 @@ export class App extends EventEmitter {
   private commandHandler: CommandHandler | null = null;
   private buttonHandler: ButtonHandlerManager | null = null;
   private modalHandler: ModalHandlerManager = new ModalHandlerManager();
+  private selectHandler: SelectHandlerManager = new SelectHandlerManager();
   private middlewareManager: MiddlewareManager = new MiddlewareManager();
   private prefixBound = false;
   private interactionBound = false;
@@ -202,8 +205,22 @@ export class App extends EventEmitter {
     return this;
   }
 
+  select(options: string | Select | SelectHandlerOptions): this {
+    if (typeof options === 'string' || (typeof options === 'object' && 'folder' in options)) {
+      const folder = typeof options === 'string' ? options : (options as SelectHandlerOptions).folder;
+      if (folder) this.selectHandler.loadFromFolder(folder);
+    } else {
+      this.selectHandler.addSelect(options as Select);
+    }
+    return this;
+  }
+
   get modals(): Map<string, Modal> {
     return this.modalHandler.modals;
+  }
+
+  get selects(): Map<string, Select> {
+    return this.selectHandler.all;
   }
 
   get prefixCommands(): Map<string, PrefixCommand> {
@@ -375,6 +392,12 @@ export class App extends EventEmitter {
 
       case 'GUILD_DELETE': {
         const guildDeleteData = data as { id: string };
+        const guild = this.guilds.get(guildDeleteData.id);
+        if (guild) {
+          for (const channelId of guild.channels.keys()) {
+            this.channels.delete(channelId);
+          }
+        }
         this.guilds.delete(guildDeleteData.id);
         this.emit('guildDelete', { id: guildDeleteData.id });
         break;
@@ -472,27 +495,39 @@ export class App extends EventEmitter {
     this.interactionBound = true;
 
     this.on('interactionCreate', (interaction) => {
-      const runner = async (ctx: Context): Promise<void> => {
-        if (this.buttonHandler && interaction.isButton) {
-          const handled = await this.buttonHandler.handle(interaction);
-          if (handled) return;
-        }
+      try {
+        const runner = async (ctx: Context): Promise<void> => {
+          if (this.buttonHandler && interaction.isButton) {
+            const handled = await this.buttonHandler.handle(interaction);
+            if (handled) return;
+          }
 
-        if (interaction.isModalSubmit) {
-          const handled = await this.modalHandler.handle(interaction, ctx);
-          if (handled) return;
-        }
+          if (interaction.isModalSubmit) {
+            const handled = await this.modalHandler.handle(interaction, ctx);
+            if (handled) return;
+          }
 
-        if (this.commandHandler && interaction.isCommand) {
-          await this.commandHandler.handle(interaction);
-        }
-      };
+          if (interaction.isSelectMenu) {
+            const select = this.selectHandler.get(interaction.customId!);
+            if (select?.handler) {
+              await select.handler(ctx);
+              return;
+            }
+          }
 
-      const ctx = new Context(interaction);
-      ctx.app = this;
-      this.middlewareManager.run(ctx, async () => runner(ctx)).catch((err: Error) => {
-        Logger.error(`Interaction handler hatasi: ${err.message}`);
-      });
+          if (this.commandHandler && interaction.isCommand) {
+            await this.commandHandler.handle(interaction);
+          }
+        };
+
+        const ctx = new Context(interaction);
+        ctx.app = this;
+        this.middlewareManager.run(ctx, async () => runner(ctx)).catch((err: Error) => {
+          Logger.error(`Interaction handler hatasi: ${err.message}`);
+        });
+      } catch (err: any) {
+        Logger.error(`Interaction context hatasi: ${err.message}`);
+      }
     });
   }
 

@@ -18,6 +18,7 @@ export class Gateway extends EventEmitter {
   private resumeUrl: string | null = null;
   private lastHeartbeatAck = true;
   private reconnecting = false;
+  private destroyed = false;
 
   constructor(token: string, options: GatewayOptions) {
     super();
@@ -60,7 +61,7 @@ export class Gateway extends EventEmitter {
         this.resumeUrl = null;
       }
 
-      if (code !== 1000) {
+      if (code !== 1000 && !this.destroyed) {
         setTimeout(() => this.reconnect(), 5000);
       }
     });
@@ -191,6 +192,7 @@ export class Gateway extends EventEmitter {
   }
 
   destroy(): void {
+    this.destroyed = true;
     this.cleanup();
     if (this.ws) {
       this.ws.removeAllListeners();

@@ -112,6 +112,7 @@ export interface RawInteractionData {
   custom_id?: string;
   options?: RawInteractionOption[];
   components?: RawComponent[];
+  values?: string[];
 }
 
 export interface RawTextInputComponent {

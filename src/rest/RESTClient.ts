@@ -38,7 +38,7 @@ export class RESTClient {
       const headers: Record<string, string> = {
         Authorization: `Bot ${this.token}`,
         'Content-Type': 'application/json',
-        'User-Agent': 'HarmoniaBot/0.1.0',
+        'User-Agent': 'discordjs-nextgen/1.2.0',
       };
 
       if (reason) {
@@ -75,7 +75,17 @@ export class RESTClient {
             }
 
             try {
-              const parsed = JSON.parse(data);
+              const parsed = data ? JSON.parse(data) : {};
+              if (res.statusCode === 429) {
+                const bodyRetry = parsed.retry_after ? Number(parsed.retry_after) : undefined;
+                const headerRetry = res.headers['retry-after'] ? Number(res.headers['retry-after']) : undefined;
+                const retryAfter = (bodyRetry ?? headerRetry ?? 1) * 1000;
+                
+                setTimeout(() => {
+                  this.request<T>(endpoint, options).then(resolve).catch(reject);
+                }, retryAfter);
+                return;
+              }
               if (res.statusCode && res.statusCode >= 400) {
                 const err = new Error(
                   `Discord API Error ${res.statusCode}: ${parsed.message ?? data}`
