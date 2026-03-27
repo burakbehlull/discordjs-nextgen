@@ -38,7 +38,7 @@
     "discordjs-nextgen"
   ],
   "author": "Burak <@burakbehlull>",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "ws": "^8.17.0"
   },
