@@ -4,6 +4,9 @@ import { User } from './User.js';
 import { Channel } from './Channel.js';
 import type { EmbedBuilder } from '../builders/EmbedBuilder.js';
 import type { ActionRowBuilder } from '../builders/ButtonBuilder.js';
+import type { Modal } from '../builders/ModalBuilder.js';
+import type { PermissionName } from '../utils/Permission.js';
+import type { Member } from './Message.js';
 
 export interface InteractionReplyOptions {
   content?: string;
@@ -24,6 +27,9 @@ export class Interaction {
   readonly user: User;
   readonly createdAt: Date;
   readonly memberPermissions: string | null;
+  public values: Record<string, string> = {};
+  public _usedPrefix: string | null = null;
+  readonly member: Member | null;
   private options: Map<string, string | number | boolean>;
   private rest: RESTClient;
   private _replied = false;
@@ -45,11 +51,23 @@ export class Interaction {
     const rawUser = data.member?.user ?? data.user;
     if (!rawUser) throw new Error('Interaction has no user');
     this.user = new User(rawUser);
+    this.member = data.member ? this.parseMember(data.member) : null;
 
     this.options = new Map();
     for (const opt of data.data?.options ?? []) {
       if (opt.value !== undefined) {
         this.options.set(opt.name, opt.value);
+      }
+    }
+
+    if (data.data?.components) {
+      for (const row of data.data.components) {
+        if (!row.components) continue;
+        for (const input of row.components as any[]) {
+          if ('value' in input && input.custom_id) {
+            this.values[input.custom_id] = input.value as string;
+          }
+        }
       }
     }
   }
@@ -60,6 +78,10 @@ export class Interaction {
 
   get isButton(): boolean {
     return this.type === 3;
+  }
+
+  get isModalSubmit(): boolean {
+    return this.type === 5;
   }
 
   get replied(): boolean {
@@ -112,6 +134,17 @@ export class Interaction {
     this._replied = true;
   }
 
+  async showModal(modal: Modal | Record<string, any>): Promise<void> {
+    if (this._replied) throw new Error('Interaction already replied');
+    const payload = (typeof (modal as any).toJSON === 'function') ? (modal as any).toJSON() : modal;
+    
+    await this.rest.post(`/interactions/${this.id}/${this.token}/callback`, {
+      type: 9, // MODAL
+      data: payload,
+    });
+    this._replied = true;
+  }
+
   async followUp(options: string | InteractionReplyOptions): Promise<void> {
     const payload = this.resolveOptions(options);
     await this.rest.post(`/webhooks/${this.applicationId}/${this.token}`, payload);
@@ -134,4 +167,14 @@ export class Interaction {
       flags: ephemeral ? 64 : 0,
     };
   }
+
+  private parseMember(raw: any): Member {
+    return {
+      nick: raw.nick ?? null,
+      roles: raw.roles,
+      joinedAt: new Date(raw.joined_at),
+      permissions: raw.permissions ?? null,
+    };
+  }
 }
+

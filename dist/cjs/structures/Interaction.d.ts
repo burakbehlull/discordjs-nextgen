@@ -4,6 +4,8 @@ import { User } from './User.js';
 import { Channel } from './Channel.js';
 import type { EmbedBuilder } from '../builders/EmbedBuilder.js';
 import type { ActionRowBuilder } from '../builders/ButtonBuilder.js';
+import type { Modal } from '../builders/ModalBuilder.js';
+import type { Member } from './Message.js';
 export interface InteractionReplyOptions {
     content?: string;
     embeds?: EmbedBuilder[];
@@ -22,6 +24,9 @@ export declare class Interaction {
     readonly user: User;
     readonly createdAt: Date;
     readonly memberPermissions: string | null;
+    values: Record<string, string>;
+    _usedPrefix: string | null;
+    readonly member: Member | null;
     private options;
     private rest;
     private _replied;
@@ -29,6 +34,7 @@ export declare class Interaction {
     constructor(data: RawInteraction, rest: RESTClient);
     get isCommand(): boolean;
     get isButton(): boolean;
+    get isModalSubmit(): boolean;
     get replied(): boolean;
     get deferred(): boolean;
     get channel(): Channel | null;
@@ -38,8 +44,10 @@ export declare class Interaction {
     get optionValues(): (string | number | boolean)[];
     reply(options: string | InteractionReplyOptions): Promise<void>;
     deferReply(ephemeral?: boolean): Promise<void>;
+    showModal(modal: Modal | Record<string, any>): Promise<void>;
     followUp(options: string | InteractionReplyOptions): Promise<void>;
     editReply(options: string | InteractionReplyOptions): Promise<void>;
     private resolveOptions;
+    private parseMember;
 }
 //# sourceMappingURL=Interaction.d.ts.map

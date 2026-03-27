@@ -5,6 +5,8 @@ import type { Guild } from '../structures/Guild.js';
 import type { Channel } from '../structures/Channel.js';
 import type { MessageReplyOptions } from '../structures/Message.js';
 import type { InteractionReplyOptions } from '../structures/Interaction.js';
+import type { Modal } from '../builders/ModalBuilder.js';
+import type { App } from '../client/App.js';
 
 export class Context {
   readonly user: User;
@@ -12,6 +14,7 @@ export class Context {
   readonly channel: Channel | null;
   readonly isInteraction: boolean;
   readonly args: string[];
+  public app?: App;
 
   constructor(private source: Message | Interaction, args: string[] = []) {
     this.args = args;
@@ -60,6 +63,26 @@ export class Context {
     await (this.source as Interaction).editReply(options);
   }
 
+  async showModal(modal: Modal | Record<string, any> | string): Promise<void> {
+    if (!this.isInteraction) {
+      throw new Error('Modallar sadece interaction contextinde (Buton, Slash, Modal vb.) açılabilir.');
+    }
+
+    const interaction = this.source as Interaction;
+    if (typeof modal === 'string') {
+      if (!this.app) {
+        throw new Error('app nesnesi Context icerisinde bulunamadi. ID ile modal göstermek icin app.modal() kaydi gereklidir.');
+      }
+      const registeredModal = this.app.modals.get(modal);
+      if (!registeredModal) {
+        throw new Error(`'${modal}' ID'sine sahip bir modal bulunamadı.`);
+      }
+      await interaction.showModal(registeredModal);
+    } else {
+      await interaction.showModal(modal);
+    }
+  }
+
   get author(): User {
     return this.user;
   }
@@ -93,6 +116,14 @@ export class Context {
     const message = this.source as any;
     if (!message._usedPrefix) return false;
     return true;
+  }
+
+  get isModalSubmit(): boolean {
+    return this.interaction?.isModalSubmit ?? false;
+  }
+
+  get values(): Record<string, string> | null {
+    return this.interaction?.values ?? null;
   }
 
   get memberPermissions(): string | null {

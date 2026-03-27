@@ -10,6 +10,8 @@ import { Logger } from '../utils/Logger.js';
 import { PrefixHandler } from '../handlers/PrefixHandler.js';
 import { CommandHandler } from '../handlers/CommandHandler.js';
 import { ButtonHandlerManager } from '../handlers/ButtonHandler.js';
+import { ModalHandlerManager } from '../handlers/ModalHandler.js';
+import { Modal } from '../builders/ModalBuilder.js';
 import { SlashCommandBuilder } from '../builders/SlashCommandBuilder.js';
 import { FileLoader } from '../utils/FileLoader.js';
 import { MiddlewareManager } from '../utils/MiddlewareManager.js';
@@ -27,6 +29,7 @@ export class App extends EventEmitter {
         this.prefixHandler = null;
         this.commandHandler = null;
         this.buttonHandler = null;
+        this.modalHandler = new ModalHandlerManager();
         this.middlewareManager = new MiddlewareManager();
         this.prefixBound = false;
         this.interactionBound = false;
@@ -85,11 +88,14 @@ export class App extends EventEmitter {
         this.bindInteractionListener();
         return this;
     }
-    button(options) {
+    button(options, callback) {
         if (!this.buttonHandler) {
             this.buttonHandler = new ButtonHandlerManager(typeof options === 'object' && !('run' in options) ? options : {});
         }
-        if (typeof options === 'string' || (typeof options === 'object' && 'folder' in options)) {
+        if (typeof options === 'string' && callback) {
+            this.buttonHandler.addButton({ customId: options, run: callback });
+        }
+        else if (typeof options === 'string' || (typeof options === 'object' && 'folder' in options)) {
             const folderPath = typeof options === 'string' ? options : options.folder;
             FileLoader.loadFiles(folderPath).then((buttons) => {
                 for (const button of buttons) {
@@ -109,8 +115,28 @@ export class App extends EventEmitter {
         this.bindInteractionListener();
         return this;
     }
-    buttons(options) {
-        return this.button(options);
+    buttons(options, callback) {
+        return this.button(options, callback);
+    }
+    modal(options) {
+        if (options instanceof Modal) {
+            this.modalHandler.addModal(options);
+        }
+        else if (typeof options === 'object' && 'folder' in options) {
+            FileLoader.loadFiles(options.folder).then((modals) => {
+                for (const modal of modals) {
+                    this.modalHandler.addModal(modal);
+                }
+                Logger.success(`${modals.length} modal [${options.folder}] klasorunden yuklendi.`);
+            }).catch((err) => {
+                Logger.error(`Modallar yuklenemedi: ${err.message}`);
+            });
+        }
+        this.bindInteractionListener();
+        return this;
+    }
+    get modals() {
+        return this.modalHandler.modals;
     }
     use(fn) {
         if (typeof fn === 'function') {
@@ -319,11 +345,12 @@ export class App extends EventEmitter {
         this.on('messageCreate', (message) => {
             if (!this.prefixHandler)
                 return;
-            const prefix = this.prefixHandler.getPrefix(message.content);
-            if (prefix) {
-                message._usedPrefix = prefix;
+            const prefixValue = this.prefixHandler.getPrefix(message.content);
+            if (prefixValue) {
+                message._usedPrefix = prefixValue;
             }
             const ctx = new Context(message);
+            ctx.app = this;
             this.middlewareManager.run(ctx, async () => {
                 await this.prefixHandler.handle(message);
             }).catch((err) => {
@@ -336,18 +363,24 @@ export class App extends EventEmitter {
             return;
         this.interactionBound = true;
         this.on('interactionCreate', (interaction) => {
-            const runner = async () => {
+            const runner = async (ctx) => {
                 if (this.buttonHandler && interaction.isButton) {
                     const handled = await this.buttonHandler.handle(interaction);
                     if (handled)
                         return;
                 }
-                if (this.commandHandler) {
+                if (interaction.isModalSubmit) {
+                    const handled = await this.modalHandler.handle(interaction, ctx);
+                    if (handled)
+                        return;
+                }
+                if (this.commandHandler && interaction.isCommand) {
                     await this.commandHandler.handle(interaction);
                 }
             };
             const ctx = new Context(interaction);
-            this.middlewareManager.run(ctx, runner).catch((err) => {
+            ctx.app = this;
+            this.middlewareManager.run(ctx, async () => runner(ctx)).catch((err) => {
                 Logger.error(`Interaction handler hatasi: ${err.message}`);
             });
         });

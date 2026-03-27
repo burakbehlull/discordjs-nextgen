@@ -40,7 +40,7 @@ export interface RawMember {
 
 export interface RawComponent {
   type: number;
-  components?: RawButtonComponent[];
+  components?: (RawButtonComponent | RawTextInputComponent)[];
 }
 
 export interface RawButtonComponent {
@@ -111,6 +111,19 @@ export interface RawInteractionData {
   type: number;
   custom_id?: string;
   options?: RawInteractionOption[];
+  components?: RawComponent[];
+}
+
+export interface RawTextInputComponent {
+  type: 4;
+  custom_id: string;
+  style: number;
+  label: string;
+  min_length?: number;
+  max_length?: number;
+  required?: boolean;
+  value?: string;
+  placeholder?: string;
 }
 
 export interface RawInteractionOption {

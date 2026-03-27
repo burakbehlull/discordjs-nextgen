@@ -82,7 +82,7 @@ export class PrefixHandler {
   async handle(message: Message): Promise<void> {
     if (this.ignoreBots && message.author.bot) return;
 
-    const usedPrefix = (message as any)._usedPrefix || this.getPrefix(message.content);
+    const usedPrefix = message._usedPrefix || this.getPrefix(message.content);
     if (!usedPrefix) return;
 
     const [commandName, ...args] = message.content.slice(usedPrefix.length).trim().split(/\s+/);
@@ -93,7 +93,7 @@ export class PrefixHandler {
     if (!cmd) return;
 
     if (cmd.permissions && cmd.permissions.length > 0) {
-      const memberPermissions = (message as unknown as { memberPermissions?: string }).memberPermissions;
+      const memberPermissions = message.memberPermissions;
       if (!memberPermissions || !Permission.hasAll(memberPermissions, cmd.permissions)) {
         await message.reply(`Bu komutu kullanmak için yetkin yok: \`${cmd.permissions.join(', ')}\``);
         return;

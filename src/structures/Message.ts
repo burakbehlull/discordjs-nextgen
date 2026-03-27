@@ -29,6 +29,7 @@ export class Message {
   readonly pinned: boolean;
   readonly type: number;
   readonly member: Member | null;
+  public _usedPrefix: string | null = null;
   private rest: RESTClient;
 
   constructor(data: RawMessage, rest: RESTClient) {

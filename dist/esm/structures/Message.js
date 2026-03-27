@@ -2,6 +2,7 @@ import { User } from './User.js';
 import { Channel } from './Channel.js';
 export class Message {
     constructor(data, rest) {
+        this._usedPrefix = null;
         this.id = data.id;
         this.channelId = data.channel_id;
         this.guildId = data.guild_id ?? null;

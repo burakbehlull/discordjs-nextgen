@@ -26,6 +26,7 @@ export declare class Message {
     readonly pinned: boolean;
     readonly type: number;
     readonly member: Member | null;
+    _usedPrefix: string | null;
     private rest;
     constructor(data: RawMessage, rest: RESTClient);
     private static parseMember;

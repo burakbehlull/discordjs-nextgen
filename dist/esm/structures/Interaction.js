@@ -2,6 +2,8 @@ import { User } from './User.js';
 import { Channel } from './Channel.js';
 export class Interaction {
     constructor(data, rest) {
+        this.values = {};
+        this._usedPrefix = null;
         this._replied = false;
         this._deferred = false;
         this.id = data.id;
@@ -19,10 +21,22 @@ export class Interaction {
         if (!rawUser)
             throw new Error('Interaction has no user');
         this.user = new User(rawUser);
+        this.member = data.member ? this.parseMember(data.member) : null;
         this.options = new Map();
         for (const opt of data.data?.options ?? []) {
             if (opt.value !== undefined) {
                 this.options.set(opt.name, opt.value);
+            }
+        }
+        if (data.data?.components) {
+            for (const row of data.data.components) {
+                if (!row.components)
+                    continue;
+                for (const input of row.components) {
+                    if ('value' in input && input.custom_id) {
+                        this.values[input.custom_id] = input.value;
+                    }
+                }
             }
         }
     }
@@ -31,6 +45,9 @@ export class Interaction {
     }
     get isButton() {
         return this.type === 3;
+    }
+    get isModalSubmit() {
+        return this.type === 5;
     }
     get replied() {
         return this._replied;
@@ -76,6 +93,16 @@ export class Interaction {
         this._deferred = true;
         this._replied = true;
     }
+    async showModal(modal) {
+        if (this._replied)
+            throw new Error('Interaction already replied');
+        const payload = (typeof modal.toJSON === 'function') ? modal.toJSON() : modal;
+        await this.rest.post(`/interactions/${this.id}/${this.token}/callback`, {
+            type: 9, // MODAL
+            data: payload,
+        });
+        this._replied = true;
+    }
     async followUp(options) {
         const payload = this.resolveOptions(options);
         await this.rest.post(`/webhooks/${this.applicationId}/${this.token}`, payload);
@@ -94,6 +121,14 @@ export class Interaction {
             embeds: embeds?.map((e) => e.toJSON()),
             components: components?.map((c) => c.toJSON()),
             flags: ephemeral ? 64 : 0,
+        };
+    }
+    parseMember(raw) {
+        return {
+            nick: raw.nick ?? null,
+            roles: raw.roles,
+            joinedAt: new Date(raw.joined_at),
+            permissions: raw.permissions ?? null,
         };
     }
 }

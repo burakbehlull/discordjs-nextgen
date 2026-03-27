@@ -49,18 +49,72 @@ app
     await ctx.reply('Başarıyla doğrulandınız!');
   })
 
-  // 5. Prefix & Slash Komutları
+  // 5. Modal Etkileşimlerini Yükle
+  .modal({ folder: 'modals' })
+
+  // 6. Prefix & Slash Komutları
   .prefix({ folder: 'commands/prefix', prefix: '!' })
   .slash({ folder: 'commands/slash' })
 
-  // 6. Olayları Yükle
+  // 7. Olayları Yükle
   .events('events')
 
-  // 7. Botu Çalıştır
+  // 8. Botu Çalıştır
   .run('YOUR_DISCORD_TOKEN');
 ```
 
+> **Önemli Not:** Discord API gereği, Modallar sadece **Interaction** (Slash Komutları, Butonlar, Select Menüler) üzerinden açılabilir. Standart Prefix komutlarında veya `messageCreate` gibi mesaj tabanlı eventlerde modal **gösterilemez**.
+
 ## 🧩 Modüler Kullanım
+
+### Hibrit Komut ve Modal (HybridCommand)
+Tek bir kodla hem Prefix hem Slash olarak çalışan bir komutta modal kullanımı:
+
+`commands/hybrid/feedback.ts`
+```typescript
+import { HybridCommand } from 'discordjs-nextgen';
+
+const feedbackCommand: HybridCommand = {
+  name: 'feedback',
+  description: 'Geri bildirim formunu açar',
+  run: async (ctx) => {
+    // Prefix komutu olarak kullanılırsa hata almamak için kontrol
+    if (!ctx.isInteraction) {
+      return ctx.reply('Üzgünüm, bu formu sadece slash komutu (/feedback) kullanarak doldurabilirsin.');
+    }
+
+    // Modal ID ile gösterme (app.modal ile kaydedilmiş olmalı)
+    await ctx.showModal('feedback_form');
+  },
+};
+
+export default feedbackCommand;
+```
+
+### Slash Komutu ve Modal
+Sadece slash komutu üzerinden modal açma:
+
+`commands/slash/register.ts`
+```typescript
+import { Modal, SlashCommandBuilder } from 'discordjs-nextgen';
+
+const registerCommand = {
+  data: new SlashCommandBuilder()
+    .setName('kayıt')
+    .setDescription('Kayıt formunu açar'),
+  run: async (ctx) => {
+    // Manuel modal oluşturup gösterme
+    const modal = Modal.create('reg_modal')
+      .title('Kayıt Sistemi')
+      .short('username', { label: 'Kullanıcı Adı' })
+      .paragraph('bio', { label: 'Hakkında', required: false });
+
+    await ctx.showModal(modal);
+  }
+};
+
+export default registerCommand;
+```
 
 ### Hibrit Komut (HybridCommand)
 `commands/hybrid/ping.ts`
@@ -97,6 +151,89 @@ const verifyButton: ButtonHandler = {
 export default verifyButton;
 ```
 
+### Olaylar (Events)
+Olayları bir klasörden yükleyebilirsiniz:
+
+`events/ready.ts`
+```typescript
+import { AppEvent } from 'discordjs-nextgen';
+
+const readyEvent: AppEvent<'ready'> = {
+  name: 'ready',
+  run: (user) => {
+    console.log(`${user.tag} hazır!`);
+  }
+};
+
+export default readyEvent;
+```
+
+> **Not:** `messageCreate` gibi mesaj tabanlı olaylarda modal açılamaz. Ancak `interactionCreate` olayı içinde gelen etkileşime göre `ctx.showModal()` kullanabilirsiniz.
+
+#### Olaylar İçinde Modal Kullanımı (Detaylı)
+
+**Hatalı Kullanım (`messageCreate`):**
+Discord kuralları gereği, bir mesaj yazıldığında botun karşısına modal (form) çıkaramazsınız.
+
+`events/messageCreate.ts`
+```typescript
+import { AppEvent, Context } from 'discordjs-nextgen';
+
+const messageEvent: AppEvent<'messageCreate'> = {
+  name: 'messageCreate',
+  run: async (message) => {
+    if (message.content === '!form') {
+      const ctx = new Context(message);
+      // HATA: Discord mesajlara modal ile yanıt vermeyi desteklemez.
+      // await ctx.showModal('feedback_form'); 
+      
+      await ctx.reply('Üzgünüm, Discord sadece butonlar veya slash komutları üzerinden form (modal) açılmasına izin verir.');
+    }
+  }
+};
+```
+
+**Doğru Kullanım (`interactionCreate`):**
+Eğer hazır `.button()` veya `.slash()` handler'larını kullanmıyorsanız, manuel olarak `interactionCreate` içinde modal açabilirsiniz.
+
+`events/interactionCreate.ts`
+```typescript
+import { AppEvent, Context } from 'discordjs-nextgen';
+
+const interactionEvent: AppEvent<'interactionCreate'> = {
+  name: 'interactionCreate',
+  run: async (interaction) => {
+    // Eğer bir butona basıldıysa ve ID'si eşleşiyorsa
+    if (interaction.isButton && interaction.customId === 'open_form') {
+      const ctx = new Context(interaction);
+      await ctx.showModal('feedback_form');
+    }
+  }
+};
+```
+
+### Modal İşleyici (Modal)
+`.modal({ folder: 'modals' })` kullandığınızda, bu klasördeki dosyalar birer `Modal` nesnesi export etmelidir.
+
+`modals/feedback.ts`
+```typescript
+import { Modal } from 'discordjs-nextgen';
+
+const feedbackModal = Modal.create('feedback_form')
+  .title('Geri Bildirim')
+  .short('name', { label: 'Adınız', placeholder: 'Buraya yazın...' })
+  .paragraph('comment', { label: 'Yorumunuz', min: 10, max: 1000 })
+  .onSubmit(async (ctx) => {
+    // ctx.values ile form verilerine erişebilirsiniz
+    const name = ctx.values.name;
+    const comment = ctx.values.comment;
+    
+    await ctx.reply({ content: `Teşekkürler ${name}! Yorumun alındı.`, ephemeral: true });
+  });
+
+export default feedbackModal;
+```
+
 ### Prefix Komutu (Özel Ayarlar)
 `commands/prefix/admin.ts`
 ```typescript
@@ -127,6 +264,8 @@ export default adminCommand;
 - `ctx.deferReply(ephemeral?)`: Yanıtı geciktirir (sadece Interaction).
 - `ctx.editReply(content | options)`: Geciktirilmiş yanıtı düzenler.
 - `ctx.followUp(content | options)`: Yeni bir yanıt gönderir.
+- `ctx.showModal(modal)`: Bir modal formu açar (sadece Interaction).
+- `ctx.values`: Modal submit eyleminde form verilerine erişir.
 - `ctx.args`: Prefix komutlarında kelime dizisi, Slash komutlarında opsiyon değerleri.
 - `ctx.isInteraction`: Eylemin bir Interaction (Slash/Button) olup olmadığını belirtir.
 - `ctx.createdAt`: Eylemin oluşturulma zamanı.
@@ -165,6 +304,8 @@ app.use({
 - `.slash({ folder, guildId? })`: Slash komutlarını klasörden yükler.
 - `.button({ folder })`: Klasörden buton işleyicilerini yükler.
 - `.button(customId, callback)`: Fluent API ile inline buton işleyicisi tanımlar.
+- `.modal({ folder })`: Klasörden modal işleyicilerini yükler.
+- `.modal(modalInstance)`: Bir `Modal` nesnesini doğrudan kaydeder.
 - `.events(folder)`: Belirtilen klasördeki event dosyalarını yükler.
 - `.run(token)`: Botu başlatır (alternatif: `.login(token)`).
 - `.setPresence(data)`: Botun durumunu (aktif, boşta, dnd) ve aktivitesini ayarlar.
@@ -176,6 +317,7 @@ app.use({
 - `cooldown(seconds)`: **Middleware** olarak kullanılır. `app.use(cooldown(5))`.
 - `EmbedBuilder`: Zengin mesaj içerikleri oluşturmak için.
 - `ButtonBuilder` & `ActionRowBuilder`: Butonlu mesajlar oluşturmak için.
+- `Modal`: Etkileşimli formlar oluşturmak için.
 
 ## 📄 Lisans
 MIT

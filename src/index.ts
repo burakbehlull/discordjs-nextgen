@@ -7,6 +7,7 @@ export { SlashCommandBuilder } from './builders/SlashCommandBuilder.js';
 export type { SlashCommandOption, SlashCommandOptionType } from './builders/SlashCommandBuilder.js';
 export { ButtonBuilder, ActionRowBuilder } from './builders/ButtonBuilder.js';
 export type { ButtonStyle } from './builders/ButtonBuilder.js';
+export { Modal } from './builders/ModalBuilder.js';
 
 export { User } from './structures/User.js';
 export { Channel } from './structures/Channel.js';
@@ -29,6 +30,7 @@ export { ButtonHandlerManager } from './handlers/ButtonHandler.js';
 export type { ButtonHandler, ButtonHandlerOptions } from './handlers/ButtonHandler.js';
 export { CommandHandler } from './handlers/CommandHandler.js';
 export type { CommandHandlerOptions, SlashCommand } from './handlers/CommandHandler.js';
+export { ModalHandlerManager } from './handlers/ModalHandler.js';
 
 export { Intents, GatewayEvents, ActivityTypes } from './types/constants.js';
 export type { PresenceData } from './types/raw.js';

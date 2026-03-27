@@ -8,9 +8,11 @@ import { Interaction } from '../structures/Interaction.js';
 import { type PrefixOptions } from '../handlers/PrefixHandler.js';
 import { type CommandHandlerOptions } from '../handlers/CommandHandler.js';
 import { type ButtonHandler, type ButtonHandlerOptions } from '../handlers/ButtonHandler.js';
+import { Modal } from '../builders/ModalBuilder.js';
 import { SlashCommandBuilder, type SlashCommandOption } from '../builders/SlashCommandBuilder.js';
 import { type MiddlewareFunction } from '../utils/MiddlewareManager.js';
 import { Context } from '../structures/Context.js';
+import { type PermissionName } from '../utils/Permission.js';
 import type { PresenceData } from '../types/raw.js';
 import { Intents } from '../types/constants.js';
 export interface HybridCommand {
@@ -18,7 +20,7 @@ export interface HybridCommand {
     description: string;
     aliases?: string[];
     cooldown?: number;
-    permissions?: any[];
+    permissions?: PermissionName[];
     options?: SlashCommandOption[];
     run: (ctx: Context, args: string[]) => Promise<void> | void;
 }
@@ -71,6 +73,7 @@ export declare class App extends EventEmitter {
     private prefixHandler;
     private commandHandler;
     private buttonHandler;
+    private modalHandler;
     private middlewareManager;
     private prefixBound;
     private interactionBound;
@@ -86,10 +89,14 @@ export declare class App extends EventEmitter {
     })): this;
     button(options: string | ButtonHandler | (ButtonHandlerOptions & {
         folder?: string;
-    })): this;
+    }), callback?: (ctx: Context) => Promise<void> | void): this;
     buttons(options: string | ButtonHandler | (ButtonHandlerOptions & {
         folder?: string;
-    })): this;
+    }), callback?: (ctx: Context) => Promise<void> | void): this;
+    modal(options: Modal | {
+        folder: string;
+    }): this;
+    get modals(): Map<string, Modal>;
     use(fn: MiddlewareFunction | AppPlugin): this;
     command(options: string | (HybridOptions & {
         folder: string;

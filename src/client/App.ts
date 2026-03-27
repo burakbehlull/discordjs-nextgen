@@ -10,10 +10,13 @@ import { Logger } from '../utils/Logger.js';
 import { PrefixHandler, type PrefixOptions, type PrefixCommand } from '../handlers/PrefixHandler.js';
 import { CommandHandler, type CommandHandlerOptions, type SlashCommand } from '../handlers/CommandHandler.js';
 import { ButtonHandlerManager, type ButtonHandler, type ButtonHandlerOptions } from '../handlers/ButtonHandler.js';
+import { ModalHandlerManager } from '../handlers/ModalHandler.js';
+import { Modal } from '../builders/ModalBuilder.js';
 import { SlashCommandBuilder, type SlashCommandOption } from '../builders/SlashCommandBuilder.js';
 import { FileLoader } from '../utils/FileLoader.js';
 import { MiddlewareManager, type MiddlewareFunction } from '../utils/MiddlewareManager.js';
 import { Context } from '../structures/Context.js';
+import { Permission, type PermissionName } from '../utils/Permission.js';
 import type { PresenceData, RawMessage, RawGuild, RawInteraction, RawUser, RawChannel } from '../types/raw.js';
 import { Intents } from '../types/constants.js';
 
@@ -22,7 +25,7 @@ export interface HybridCommand {
   description: string;
   aliases?: string[];
   cooldown?: number;
-  permissions?: any[];
+  permissions?: PermissionName[];
   options?: SlashCommandOption[];
   run: (ctx: Context, args: string[]) => Promise<void> | void;
 }
@@ -76,6 +79,7 @@ export class App extends EventEmitter {
   private prefixHandler: PrefixHandler | null = null;
   private commandHandler: CommandHandler | null = null;
   private buttonHandler: ButtonHandlerManager | null = null;
+  private modalHandler: ModalHandlerManager = new ModalHandlerManager();
   private middlewareManager: MiddlewareManager = new MiddlewareManager();
   private prefixBound = false;
   private interactionBound = false;
@@ -177,6 +181,27 @@ export class App extends EventEmitter {
 
   buttons(options: string | ButtonHandler | (ButtonHandlerOptions & { folder?: string }), callback?: (ctx: Context) => Promise<void> | void): this {
     return this.button(options, callback);
+  }
+
+  modal(options: Modal | { folder: string }): this {
+    if (options instanceof Modal) {
+      this.modalHandler.addModal(options);
+    } else if (typeof options === 'object' && 'folder' in options) {
+      FileLoader.loadFiles<Modal>(options.folder).then((modals) => {
+        for (const modal of modals) {
+          this.modalHandler.addModal(modal);
+        }
+        Logger.success(`${modals.length} modal [${options.folder}] klasorunden yuklendi.`);
+      }).catch((err: Error) => {
+        Logger.error(`Modallar yuklenemedi: ${err.message}`);
+      });
+    }
+    this.bindInteractionListener();
+    return this;
+  }
+
+  get modals(): Map<string, Modal> {
+    return this.modalHandler.modals;
   }
 
   use(fn: MiddlewareFunction | AppPlugin): this {
@@ -412,12 +437,13 @@ export class App extends EventEmitter {
     this.on('messageCreate', (message) => {
       if (!this.prefixHandler) return;
 
-      const prefix = this.prefixHandler.getPrefix(message.content);
-      if (prefix) {
-        (message as any)._usedPrefix = prefix;
+      const prefixValue = this.prefixHandler.getPrefix(message.content);
+      if (prefixValue) {
+        message._usedPrefix = prefixValue;
       }
 
       const ctx = new Context(message);
+      ctx.app = this;
       this.middlewareManager.run(ctx, async () => {
         await this.prefixHandler!.handle(message);
       }).catch((err: Error) => {
@@ -431,19 +457,25 @@ export class App extends EventEmitter {
     this.interactionBound = true;
 
     this.on('interactionCreate', (interaction) => {
-      const runner = async (): Promise<void> => {
+      const runner = async (ctx: Context): Promise<void> => {
         if (this.buttonHandler && interaction.isButton) {
           const handled = await this.buttonHandler.handle(interaction);
           if (handled) return;
         }
 
-        if (this.commandHandler) {
+        if (interaction.isModalSubmit) {
+          const handled = await this.modalHandler.handle(interaction, ctx);
+          if (handled) return;
+        }
+
+        if (this.commandHandler && interaction.isCommand) {
           await this.commandHandler.handle(interaction);
         }
       };
 
       const ctx = new Context(interaction);
-      this.middlewareManager.run(ctx, runner).catch((err: Error) => {
+      ctx.app = this;
+      this.middlewareManager.run(ctx, async () => runner(ctx)).catch((err: Error) => {
         Logger.error(`Interaction handler hatasi: ${err.message}`);
       });
     });

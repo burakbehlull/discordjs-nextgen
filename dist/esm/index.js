@@ -3,6 +3,7 @@ export { Context } from './structures/Context.js';
 export { EmbedBuilder } from './builders/EmbedBuilder.js';
 export { SlashCommandBuilder } from './builders/SlashCommandBuilder.js';
 export { ButtonBuilder, ActionRowBuilder } from './builders/ButtonBuilder.js';
+export { Modal } from './builders/ModalBuilder.js';
 export { User } from './structures/User.js';
 export { Channel } from './structures/Channel.js';
 export { Guild } from './structures/Guild.js';
@@ -14,5 +15,6 @@ export { Permission } from './utils/Permission.js';
 export { PrefixHandler } from './handlers/PrefixHandler.js';
 export { ButtonHandlerManager } from './handlers/ButtonHandler.js';
 export { CommandHandler } from './handlers/CommandHandler.js';
+export { ModalHandlerManager } from './handlers/ModalHandler.js';
 export { Intents, GatewayEvents, ActivityTypes } from './types/constants.js';
 //# sourceMappingURL=index.js.map

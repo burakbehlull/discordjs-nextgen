@@ -41,6 +41,25 @@ export class Context {
         }
         await this.source.editReply(options);
     }
+    async showModal(modal) {
+        if (!this.isInteraction) {
+            throw new Error('Modallar sadece interaction contextinde (Buton, Slash, Modal vb.) açılabilir.');
+        }
+        const interaction = this.source;
+        if (typeof modal === 'string') {
+            if (!this.app) {
+                throw new Error('app nesnesi Context icerisinde bulunamadi. ID ile modal göstermek icin app.modal() kaydi gereklidir.');
+            }
+            const registeredModal = this.app.modals.get(modal);
+            if (!registeredModal) {
+                throw new Error(`'${modal}' ID'sine sahip bir modal bulunamadı.`);
+            }
+            await interaction.showModal(registeredModal);
+        }
+        else {
+            await interaction.showModal(modal);
+        }
+    }
     get author() {
         return this.user;
     }
@@ -68,6 +87,12 @@ export class Context {
         if (!message._usedPrefix)
             return false;
         return true;
+    }
+    get isModalSubmit() {
+        return this.interaction?.isModalSubmit ?? false;
+    }
+    get values() {
+        return this.interaction?.values ?? null;
     }
     get memberPermissions() {
         return this.isInteraction

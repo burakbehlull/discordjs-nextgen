@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ActivityTypes = exports.GatewayEvents = exports.Intents = exports.CommandHandler = exports.ButtonHandlerManager = exports.PrefixHandler = exports.Permission = exports.cooldown = exports.Cooldown = exports.Logger = exports.Interaction = exports.Message = exports.Guild = exports.Channel = exports.User = exports.ActionRowBuilder = exports.ButtonBuilder = exports.SlashCommandBuilder = exports.EmbedBuilder = exports.Context = exports.App = void 0;
+exports.ActivityTypes = exports.GatewayEvents = exports.Intents = exports.ModalHandlerManager = exports.CommandHandler = exports.ButtonHandlerManager = exports.PrefixHandler = exports.Permission = exports.cooldown = exports.Cooldown = exports.Logger = exports.Interaction = exports.Message = exports.Guild = exports.Channel = exports.User = exports.Modal = exports.ActionRowBuilder = exports.ButtonBuilder = exports.SlashCommandBuilder = exports.EmbedBuilder = exports.Context = exports.App = void 0;
 var App_js_1 = require("./client/App.js");
 Object.defineProperty(exports, "App", { enumerable: true, get: function () { return App_js_1.App; } });
 var Context_js_1 = require("./structures/Context.js");
@@ -12,6 +12,8 @@ Object.defineProperty(exports, "SlashCommandBuilder", { enumerable: true, get: f
 var ButtonBuilder_js_1 = require("./builders/ButtonBuilder.js");
 Object.defineProperty(exports, "ButtonBuilder", { enumerable: true, get: function () { return ButtonBuilder_js_1.ButtonBuilder; } });
 Object.defineProperty(exports, "ActionRowBuilder", { enumerable: true, get: function () { return ButtonBuilder_js_1.ActionRowBuilder; } });
+var ModalBuilder_js_1 = require("./builders/ModalBuilder.js");
+Object.defineProperty(exports, "Modal", { enumerable: true, get: function () { return ModalBuilder_js_1.Modal; } });
 var User_js_1 = require("./structures/User.js");
 Object.defineProperty(exports, "User", { enumerable: true, get: function () { return User_js_1.User; } });
 var Channel_js_1 = require("./structures/Channel.js");
@@ -35,6 +37,8 @@ var ButtonHandler_js_1 = require("./handlers/ButtonHandler.js");
 Object.defineProperty(exports, "ButtonHandlerManager", { enumerable: true, get: function () { return ButtonHandler_js_1.ButtonHandlerManager; } });
 var CommandHandler_js_1 = require("./handlers/CommandHandler.js");
 Object.defineProperty(exports, "CommandHandler", { enumerable: true, get: function () { return CommandHandler_js_1.CommandHandler; } });
+var ModalHandler_js_1 = require("./handlers/ModalHandler.js");
+Object.defineProperty(exports, "ModalHandlerManager", { enumerable: true, get: function () { return ModalHandler_js_1.ModalHandlerManager; } });
 var constants_js_1 = require("./types/constants.js");
 Object.defineProperty(exports, "Intents", { enumerable: true, get: function () { return constants_js_1.Intents; } });
 Object.defineProperty(exports, "GatewayEvents", { enumerable: true, get: function () { return constants_js_1.GatewayEvents; } });

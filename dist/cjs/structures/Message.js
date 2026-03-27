@@ -5,6 +5,7 @@ const User_js_1 = require("./User.js");
 const Channel_js_1 = require("./Channel.js");
 class Message {
     constructor(data, rest) {
+        this._usedPrefix = null;
         this.id = data.id;
         this.channelId = data.channel_id;
         this.guildId = data.guild_id ?? null;
