@@ -4,6 +4,9 @@ import { Context } from '../structures/Context.js';
 
 export interface SlashCommand {
   data: SlashCommandBuilder;
+  aliases?: string[];
+  usage?: string;
+  category?: string;
   run: (ctx: Context) => Promise<void> | void;
 }
 
@@ -40,6 +43,10 @@ export class CommandHandler {
   addCommand(cmd: SlashCommand): void {
     const name = (cmd.data.toJSON() as { name: string }).name;
     this.commands.set(name, cmd);
+
+    for (const alias of cmd.aliases ?? []) {
+      this.commands.set(alias, cmd);
+    }
   }
 
   async handle(interaction: Interaction): Promise<void> {
@@ -60,6 +67,16 @@ export class CommandHandler {
   }
 
   getBuilders(): SlashCommandBuilder[] {
-    return [...this.commands.values()].map((c) => c.data);
+    const builders: SlashCommandBuilder[] = [];
+    const addedNames = new Set<string>();
+
+    for (const [name, cmd] of this.commands.entries()) {
+      if (addedNames.has(name)) continue;
+
+      builders.push(cmd.data.copy().setName(name));
+      addedNames.add(name);
+    }
+
+    return builders;
   }
 }

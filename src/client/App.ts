@@ -24,6 +24,8 @@ export interface HybridCommand {
   name: string;
   description: string;
   aliases?: string[];
+  usage?: string;
+  category?: string;
   cooldown?: number;
   permissions?: PermissionName[];
   options?: SlashCommandOption[];
@@ -204,6 +206,14 @@ export class App extends EventEmitter {
     return this.modalHandler.modals;
   }
 
+  get prefixCommands(): Map<string, PrefixCommand> {
+    return this.prefixHandler?.commands ?? new Map();
+  }
+
+  get slashCommands(): Map<string, SlashCommand> {
+    return this.commandHandler?.commands ?? new Map();
+  }
+
   use(fn: MiddlewareFunction | AppPlugin): this {
     if (typeof fn === 'function') {
       this.middlewareManager.use(fn);
@@ -286,6 +296,8 @@ export class App extends EventEmitter {
     this.prefixHandler.addCommand({
       name: cmd.name,
       aliases: cmd.aliases,
+      usage: cmd.usage,
+      category: cmd.category,
       cooldown: cmd.cooldown,
       permissions: cmd.permissions as any,
       run: cmd.run,
@@ -304,6 +316,9 @@ export class App extends EventEmitter {
 
     this.commandHandler.addCommand({
       data: slashBuilder,
+      aliases: cmd.aliases,
+      usage: cmd.usage,
+      category: cmd.category,
       run: async (ctx) => {
         const args = ctx.interaction?.optionValues.map((value) => String(value)) || [];
         await cmd.run(ctx, args);

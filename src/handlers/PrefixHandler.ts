@@ -7,6 +7,8 @@ export interface PrefixCommand {
   name: string;
   description?: string;
   aliases?: string[];
+  usage?: string;
+  category?: string;
   cooldown?: number;
   permissions?: PermissionName[];
   run: (ctx: Context, args: string[]) => Promise<void> | void;
@@ -21,7 +23,7 @@ export interface PrefixOptions {
 
 export class PrefixHandler {
   private prefixes: string[];
-  private readonly commands: Map<string, PrefixCommand> = new Map();
+  readonly commands: Map<string, PrefixCommand> = new Map();
   private readonly cooldowns: Map<string, Cooldown> = new Map();
   private ignoreBots: boolean;
   private caseSensitive: boolean;

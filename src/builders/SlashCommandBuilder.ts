@@ -57,6 +57,16 @@ export class SlashCommandBuilder {
     return this;
   }
 
+  copy(): SlashCommandBuilder {
+    const builder = new SlashCommandBuilder();
+    builder.data = {
+      name: this.data.name,
+      description: this.data.description,
+      options: [...this.data.options],
+    };
+    return builder;
+  }
+
   toJSON(): Record<string, unknown> {
     return {
       name: this.data.name,

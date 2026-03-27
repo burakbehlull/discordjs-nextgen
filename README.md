@@ -5,7 +5,7 @@ Basit, hızlı ve modüler bir Discord bot framework'ü. Hem **ESM** hem de **Co
 ## 🌟 Neden discordjs-nextgen?
 
 - **Fluent API**: Zincirleme metodlarla botunuzu saniyeler içinde yapılandırın.
-- **Dinamik Yükleyici**: Komutları, olayları ve butonları klasörlerden otomatik olarak yükleyin.
+- **Dinamik & Recursive Yükleyici**: Komutları, olayları ve butonları alt klasörleriyle birlikte otomatik olarak yükleyin.
 - **Hibrit Komut Sistemi**: Tek kodla hem Prefix hem Slash komutu oluşturun.
 - **Middleware Desteği**: Komutlar öncesi çalışacak ara yazılımlar (logging, auth, cooldown vb.) ekleyin.
 - **Context Abstraction**: Mesaj ve Interaction yapılarını tek bir `Context` nesnesiyle yönetin.
@@ -92,7 +92,7 @@ export default feedbackCommand;
 ```
 
 ### Slash Komutu ve Modal
-Sadece slash komutu üzerinden modal açma:
+Sadece slash komutu üzerinden modal açma ve **category**, **usage**, **aliases** (ayrı komut olarak kaydedilir) kullanımı:
 
 `commands/slash/register.ts`
 ```typescript
@@ -102,6 +102,9 @@ const registerCommand = {
   data: new SlashCommandBuilder()
     .setName('kayıt')
     .setDescription('Kayıt formunu açar'),
+  category: 'user', // Komut kategorisi
+  usage: 'kayıt', // Kullanım şekli
+  aliases: ['register'], // Discord'da ayrı bir slash komutu olarak kaydedilir
   run: async (ctx) => {
     // Manuel modal oluşturup gösterme
     const modal = Modal.create('reg_modal')
@@ -124,6 +127,9 @@ import { HybridCommand } from 'discordjs-nextgen';
 const pingHybrid: HybridCommand = {
   name: 'ping',
   description: 'Gecikmeyi ölçer',
+  aliases: ['p'], // Alternatif isimler
+  usage: 'ping', // Kullanım şekli
+  category: 'genel', // Komut kategorisi
   run: async (ctx) => {
     const delay = Date.now() - ctx.createdAt.getTime();
     await ctx.reply(`Pong! Gecikme: **${delay}ms**`);
@@ -242,6 +248,8 @@ import { PrefixCommand } from 'discordjs-nextgen';
 const adminCommand: PrefixCommand = {
   name: 'temizle',
   aliases: ['purge'],
+  usage: 'temizle <miktar>',
+  category: 'yetkili',
   cooldown: 5, // Komuta özel 5 sn cooldown
   permissions: ['MANAGE_MESSAGES'],
   run: async (ctx, args) => {
@@ -295,6 +303,42 @@ app.use({
 });
 ```
 
+### Dinamik & Recursive Yükleme
+`discordjs-nextgen` dosya yapınızı özgürce düzenlemenize olanak tanır. Alt klasörler otomatik olarak taranır:
+
+```text
+src/
+  commands/
+    general/
+      ping.ts
+      help.ts
+    admin/
+      ban.ts
+      kick.ts
+  events/
+    guild/
+      ready.ts
+    message/
+      messageCreate.ts
+```
+
+`app.prefix({ folder: 'commands' })` veya `app.events('events')` dediğinizde, framework tüm alt klasörleri dolaşarak dosyaları yükler.
+
+### Komutlara Programatik Erişim
+Kayıtlı tüm komutlara erişerek otomatik yardım menüleri oluşturabilirsiniz:
+
+```typescript
+app.on('ready', () => {
+  // Kayıtlı prefix komutlarını Map olarak al
+  const pCmds = app.prefixCommands;
+  
+  // Kayıtlı slash komutlarını Map olarak al
+  const sCmds = app.slashCommands;
+
+  console.log(`${pCmds.size} Prefix, ${sCmds.size} Slash komutu yüklü.`);
+});
+```
+
 ## 📚 API Referansı
 
 ### `App` Metotları
@@ -310,6 +354,9 @@ app.use({
 - `.run(token)`: Botu başlatır (alternatif: `.login(token)`).
 - `.setPresence(data)`: Botun durumunu (aktif, boşta, dnd) ve aktivitesini ayarlar.
 - `.fetchUser(id)` / `.fetchGuild(id)` / `.fetchChannel(id)`: Discord API'den veri çeker.
+- `.prefixCommands`: Kayıtlı prefix komutlarını içeren Map.
+- `.slashCommands`: Kayıtlı slash komutlarını içeren Map.
+- `.modals`: Kayıtlı modalları içeren Map.
 
 ### Yardımcı Fonksiyonlar & Sınıflar
 - `Logger(options?)`: **Middleware** olarak kullanılır. `app.use(Logger())`.
