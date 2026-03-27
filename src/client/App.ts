@@ -144,14 +144,16 @@ export class App extends EventEmitter {
     return this;
   }
 
-  button(options: string | ButtonHandler | (ButtonHandlerOptions & { folder?: string })): this {
+  button(options: string | ButtonHandler | (ButtonHandlerOptions & { folder?: string }), callback?: (ctx: Context) => Promise<void> | void): this {
     if (!this.buttonHandler) {
       this.buttonHandler = new ButtonHandlerManager(
         typeof options === 'object' && !('run' in options) ? options : {}
       );
     }
 
-    if (typeof options === 'string' || (typeof options === 'object' && 'folder' in options)) {
+    if (typeof options === 'string' && callback) {
+      this.buttonHandler.addButton({ customId: options, run: callback });
+    } else if (typeof options === 'string' || (typeof options === 'object' && 'folder' in options)) {
       const folderPath = typeof options === 'string' ? options : options.folder!;
 
       FileLoader.loadFiles<ButtonHandler>(folderPath).then((buttons) => {
@@ -173,8 +175,8 @@ export class App extends EventEmitter {
     return this;
   }
 
-  buttons(options: string | ButtonHandler | (ButtonHandlerOptions & { folder?: string })): this {
-    return this.button(options);
+  buttons(options: string | ButtonHandler | (ButtonHandlerOptions & { folder?: string }), callback?: (ctx: Context) => Promise<void> | void): this {
+    return this.button(options, callback);
   }
 
   use(fn: MiddlewareFunction | AppPlugin): this {

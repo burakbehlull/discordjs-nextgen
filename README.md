@@ -44,6 +44,10 @@ app
 
   // 4. Buton Etkileşimlerini Yükle
   .button({ folder: 'buttons' })
+  // Veya Fluent API ile doğrudan tanımla:
+  .button('verify_btn', async (ctx) => {
+    await ctx.reply('Başarıyla doğrulandınız!');
+  })
 
   // 5. Prefix & Slash Komutları
   .prefix({ folder: 'commands/prefix', prefix: '!' })
@@ -158,8 +162,9 @@ app.use({
 - `.use(fn | plugin)`: Middleware veya Plugin ekler.
 - `.command({ folder })`: Belirtilen klasördeki hibrit komutları yükler.
 - `.prefix({ folder, prefix })`: Prefix komutlarını klasörden yükler ve prefix ayarlar.
-- `.slash({ folder, guildId? })`: Slash komutlarını klasörden yükler. `guildId` verilirse sadece o sunucuya yükler.
-- `.button({ folder })`: Belirtilen klasördeki buton işleyicilerini (`customId` tabanlı) yükler.
+- `.slash({ folder, guildId? })`: Slash komutlarını klasörden yükler.
+- `.button({ folder })`: Klasörden buton işleyicilerini yükler.
+- `.button(customId, callback)`: Fluent API ile inline buton işleyicisi tanımlar.
 - `.events(folder)`: Belirtilen klasördeki event dosyalarını yükler.
 - `.run(token)`: Botu başlatır (alternatif: `.login(token)`).
 - `.setPresence(data)`: Botun durumunu (aktif, boşta, dnd) ve aktivitesini ayarlar.
