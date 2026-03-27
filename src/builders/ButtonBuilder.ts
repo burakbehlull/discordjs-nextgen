@@ -19,6 +19,12 @@ export class ButtonBuilder {
     emoji?: { name: string; id?: string; animated?: boolean };
   } = { type: 2, style: 1 };
 
+  static create(id?: string): ButtonBuilder {
+    const builder = new ButtonBuilder();
+    if (id) builder.setCustomId(id);
+    return builder;
+  }
+
   setCustomId(id: string): this {
     this.data.custom_id = id;
     return this;
@@ -29,8 +35,13 @@ export class ButtonBuilder {
     return this;
   }
 
-  setStyle(style: ButtonStyle): this {
-    this.data.style = styleMap[style];
+  setStyle(style: ButtonStyle | string): this {
+    const s = style.toLowerCase() as ButtonStyle;
+    const mapped = styleMap[s];
+    if (mapped === undefined) {
+      throw new Error(`Geçersiz buton stili: ${style}. Geçerli stiller: ${Object.keys(styleMap).join(', ')}`);
+    }
+    this.data.style = mapped;
     return this;
   }
 
@@ -56,20 +67,30 @@ export class ButtonBuilder {
 }
 
 export class ActionRowBuilder {
-  private buttons: ButtonBuilder[] = [];
+  private components: (ButtonBuilder | any)[] = [];
+
+  addComponents(...components: (ButtonBuilder | any)[]): this {
+    for (const component of components) {
+      if (this.components.length >= 5) {
+        throw new Error('Bir ActionRow en fazla 5 bileşen içerebilir.');
+      }
+      this.components.push(component);
+    }
+    return this;
+  }
 
   addButton(button: ButtonBuilder): this {
-    if (this.buttons.length >= 5) {
-      throw new Error('Bir ActionRow en fazla 5 buton içerebilir.');
-    }
-    this.buttons.push(button);
-    return this;
+    return this.addComponents(button);
   }
 
   toJSON(): Record<string, unknown> {
     return {
       type: 1,
-      components: this.buttons.map((b) => b.toJSON()),
+      components: this.components.map((c) => (c.toJSON ? c.toJSON() : c)),
     };
+  }
+
+  static create(...components: (ButtonBuilder | any)[]): ActionRowBuilder {
+    return new ActionRowBuilder().addComponents(...components);
   }
 }

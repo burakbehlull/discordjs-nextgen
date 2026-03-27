@@ -5,6 +5,7 @@ export { Context } from './structures/Context.js';
 export { EmbedBuilder } from './builders/EmbedBuilder.js';
 export type { SlashCommandOption, SlashCommandOptionType } from './builders/SlashCommandBuilder.js';
 export { ButtonBuilder, ActionRowBuilder } from './builders/ButtonBuilder.js';
+export { ButtonBuilder as Button, ActionRowBuilder as ActionRow } from './builders/ButtonBuilder.js';
 export type { ButtonStyle } from './builders/ButtonBuilder.js';
 export { Modal } from './builders/ModalBuilder.js';
 export { Select } from './builders/SelectBuilder.js';

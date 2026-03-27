@@ -157,6 +157,22 @@ const verifyButton: ButtonHandler = {
 export default verifyButton;
 ```
 
+**Modern Buton Oluşturma Örneği (Tavsiye Edilen):**
+```typescript
+import { Button, ActionRow } from 'discordjs-nextgen';
+
+// .create() kullanarak çok daha hızlı oluşturun
+const row = ActionRow.create(
+  Button.create('test_btn')
+    .setLabel('Tıkla')
+    .setStyle('Primary'),
+  
+  Button.create()
+    .setLabel('Google')
+    .setURL('https://google.com')
+);
+```
+
 ### Olaylar (Events)
 Olayları bir klasörden yükleyebilirsiniz:
 
