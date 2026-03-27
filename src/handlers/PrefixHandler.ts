@@ -81,7 +81,7 @@ export class PrefixHandler {
     return null;
   }
 
-  async handle(message: Message): Promise<void> {
+  async handle(message: Message, ctx: Context): Promise<void> {
     if (this.ignoreBots && message.author.bot) return;
 
     const usedPrefix = message._usedPrefix || this.getPrefix(message.content);
@@ -93,6 +93,9 @@ export class PrefixHandler {
     const lookupName = this.caseSensitive ? commandName : commandName.toLowerCase();
     const cmd = this.commands.get(lookupName);
     if (!cmd) return;
+
+    // Update args in context since they are parsed here
+    (ctx as any).args = args;
 
     if (cmd.permissions && cmd.permissions.length > 0) {
       const memberPermissions = message.memberPermissions;
@@ -111,7 +114,6 @@ export class PrefixHandler {
 
     cooldown?.set(message.author.id);
 
-    const ctx = new Context(message, args);
     try {
       await cmd.run(ctx, args);
     } catch (err) {

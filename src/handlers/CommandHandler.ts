@@ -49,14 +49,13 @@ export class CommandHandler {
     }
   }
 
-  async handle(interaction: Interaction): Promise<void> {
+  async handle(interaction: Interaction, ctx: Context): Promise<void> {
     if (!interaction.isCommand) return;
     if (!interaction.commandName) return;
 
     const cmd = this.commands.get(interaction.commandName);
     if (!cmd) return;
 
-    const ctx = new Context(interaction);
     try {
       await cmd.run(ctx);
     } catch (err) {

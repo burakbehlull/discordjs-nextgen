@@ -483,7 +483,7 @@ export class App extends EventEmitter {
       const ctx = new Context(message);
       ctx.app = this;
       this.middlewareManager.run(ctx, async () => {
-        await this.prefixHandler!.handle(message);
+        await this.prefixHandler!.handle(message, ctx);
       }).catch((err: Error) => {
         Logger.error(`Prefix handler hatasi: ${err.message}`);
       });
@@ -498,7 +498,7 @@ export class App extends EventEmitter {
       try {
         const runner = async (ctx: Context): Promise<void> => {
           if (this.buttonHandler && interaction.isButton) {
-            const handled = await this.buttonHandler.handle(interaction);
+            const handled = await this.buttonHandler.handle(interaction, ctx);
             if (handled) return;
           }
 
@@ -516,7 +516,7 @@ export class App extends EventEmitter {
           }
 
           if (this.commandHandler && interaction.isCommand) {
-            await this.commandHandler.handle(interaction);
+            await this.commandHandler.handle(interaction, ctx);
           }
         };
 

@@ -29,7 +29,7 @@ export class ButtonHandlerManager {
     }
   }
 
-  async handle(interaction: Interaction): Promise<boolean> {
+  async handle(interaction: Interaction, ctx: Context): Promise<boolean> {
     if (!interaction.isButton || !interaction.customId) return false;
     const customId = interaction.customId;
 
@@ -42,8 +42,6 @@ export class ButtonHandlerManager {
     });
 
     if (!button) return false;
-
-    const ctx = new Context(interaction);
 
     try {
       await button.run(ctx);
