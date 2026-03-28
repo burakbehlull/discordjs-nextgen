@@ -47,6 +47,8 @@ export interface AppEvents {
   interactionCreate: [interaction: Interaction];
   guildCreate: [guild: Guild];
   guildDelete: [data: { id: string }];
+  voiceStateUpdate: [data: any];
+  voiceServerUpdate: [data: any];
   error: [error: Error];
 }
 
@@ -67,6 +69,19 @@ export interface App {
   off<K extends keyof AppEvents>(event: K, listener: (...args: AppEvents[K]) => void): this;
   emit<K extends keyof AppEvents>(event: K, ...args: AppEvents[K]): boolean;
 }
+
+interface VoiceAdapterLibraryMethods {
+  destroy: () => void;
+  onVoiceServerUpdate: (data: any) => void;
+  onVoiceStateUpdate: (data: any) => void;
+}
+
+interface VoiceAdapterMethods {
+  sendPayload: (payload: { op: number; d: any }) => boolean;
+  destroy: () => void;
+}
+
+export type VoiceAdapterCreator = (methods: VoiceAdapterLibraryMethods) => VoiceAdapterMethods;
 
 export interface HybridOptions extends Partial<Omit<HybridCommand, 'run' | 'name' | 'description'>> {
   folder?: string;
@@ -89,6 +104,7 @@ export class App extends EventEmitter {
   private prefixBound = false;
   private interactionBound = false;
   private readyBound = false;
+  private readonly voiceAdapters: Map<string, Set<VoiceAdapterLibraryMethods>> = new Map();
   user: User | null = null;
 
   constructor(private options: AppOptions = {}) {
@@ -308,6 +324,27 @@ export class App extends EventEmitter {
     return this.run(token);
   }
 
+  createVoiceAdapter(guildId: string): VoiceAdapterCreator {
+    return (methods: VoiceAdapterLibraryMethods): VoiceAdapterMethods => {
+      const adapters = this.voiceAdapters.get(guildId) ?? new Set<VoiceAdapterLibraryMethods>();
+      adapters.add(methods);
+      this.voiceAdapters.set(guildId, adapters);
+
+      return {
+        sendPayload: (payload) => this.gateway?.sendPayload(payload.op, payload.d) ?? false,
+        destroy: () => {
+          methods.destroy();
+          const current = this.voiceAdapters.get(guildId);
+          if (!current) return;
+          current.delete(methods);
+          if (current.size === 0) {
+            this.voiceAdapters.delete(guildId);
+          }
+        },
+      };
+    };
+  }
+
   private registerHybrid(cmd: HybridCommand): void {
     if (!this.prefixHandler) this.prefixHandler = new PrefixHandler();
     this.prefixHandler.addCommand({
@@ -399,7 +436,38 @@ export class App extends EventEmitter {
           }
         }
         this.guilds.delete(guildDeleteData.id);
+        this.voiceAdapters.delete(guildDeleteData.id);
         this.emit('guildDelete', { id: guildDeleteData.id });
+        break;
+      }
+
+      case 'VOICE_STATE_UPDATE': {
+        const voiceState = data as any;
+        const guildId = voiceState.guild_id as string | undefined;
+        if (guildId) {
+          const adapters = this.voiceAdapters.get(guildId);
+          if (adapters) {
+            for (const adapter of adapters) {
+              adapter.onVoiceStateUpdate(voiceState);
+            }
+          }
+        }
+        this.emit('voiceStateUpdate', voiceState);
+        break;
+      }
+
+      case 'VOICE_SERVER_UPDATE': {
+        const voiceServer = data as any;
+        const guildId = voiceServer.guild_id as string | undefined;
+        if (guildId) {
+          const adapters = this.voiceAdapters.get(guildId);
+          if (adapters) {
+            for (const adapter of adapters) {
+              adapter.onVoiceServerUpdate(voiceServer);
+            }
+          }
+        }
+        this.emit('voiceServerUpdate', voiceServer);
         break;
       }
 
@@ -466,6 +534,7 @@ export class App extends EventEmitter {
     this.gateway = null;
     this.token = null;
     this.user = null;
+    this.voiceAdapters.clear();
   }
 
   private bindPrefixListener(): void {

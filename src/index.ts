@@ -1,5 +1,5 @@
 export { App } from './client/App.js';
-export type { AppOptions, AppEvents, AppEvent, AppPlugin, HybridCommand } from './client/App.js';
+export type { AppOptions, AppEvents, AppEvent, AppPlugin, HybridCommand, VoiceAdapterCreator } from './client/App.js';
 
 export { Context } from './structures/Context.js';
 export { EmbedBuilder } from './builders/EmbedBuilder.js';

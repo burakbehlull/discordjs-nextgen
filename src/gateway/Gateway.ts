@@ -170,9 +170,13 @@ export class Gateway extends EventEmitter {
   }
 
   private send(op: number, d: unknown): void {
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ op, d }));
-    }
+    this.sendPayload(op, d);
+  }
+
+  sendPayload(op: number, d: unknown): boolean {
+    if (this.ws?.readyState !== WebSocket.OPEN) return false;
+    this.ws.send(JSON.stringify({ op, d }));
+    return true;
   }
 
   private shouldResume(code: number): boolean {
