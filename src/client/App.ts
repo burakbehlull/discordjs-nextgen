@@ -228,6 +228,7 @@ export class App extends EventEmitter {
     } else {
       this.selectHandler.addSelect(options as Select);
     }
+    this.bindInteractionListener();
     return this;
   }
 

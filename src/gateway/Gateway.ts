@@ -36,11 +36,13 @@ export class Gateway extends EventEmitter {
   };
 
   connect(): void {
+    this.destroyed = false;
     const url = this.resumeUrl ?? GATEWAY_URL;
     this.ws = new WebSocket(url);
 
     this.ws.on('open', () => {
       this.reconnecting = false;
+      this.lastHeartbeatAck = true;
     });
 
     this.ws.on('message', (data: Buffer) => {
@@ -165,7 +167,12 @@ export class Gateway extends EventEmitter {
   private reconnect(): void {
     if (this.reconnecting) return;
     this.reconnecting = true;
-    this.destroy();
+    this.cleanup();
+    if (this.ws) {
+      this.ws.removeAllListeners();
+      this.ws.close();
+      this.ws = null;
+    }
     this.connect();
   }
 
