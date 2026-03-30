@@ -1,25 +1,25 @@
 # discordjs-nextgen
 
-[Turkish Documentation](./lang/tr.md)
+[English README](../README.md)
 
-Simple, fast, and modular Discord bot framework with both ESM and CommonJS support.
+Basit, hizli ve moduler bir Discord bot framework'u. Hem **ESM** hem de **CommonJS** destegi ile modern gelistirme standartlarina uygundur.
 
-## Why discordjs-nextgen?
+## Neden discordjs-nextgen?
 
-- Fluent API for quick setup
-- Dynamic and recursive file loading
-- Hybrid command system for Prefix + Slash
-- Middleware support
-- Unified `Context` abstraction
-- Plugin system for modular extensions
+- **Fluent API**: Zincirleme metodlarla botunuzu saniyeler icinde yapilandirin.
+- **Dinamik ve Recursive Yukleyici**: Komutlari, olaylari ve butonlari alt klasorleriyle birlikte otomatik yukleyin.
+- **Hibrit Komut Sistemi**: Tek kodla hem Prefix hem Slash komutu olusturun.
+- **Middleware Destegi**: Komutlar oncesi calisacak ara yazilimlar ekleyin.
+- **Context Abstraction**: Mesaj ve interaction yapilarini tek bir `Context` nesnesiyle yonetin.
+- **Plugin Sistemi**: Kutuphaneyi eklentilerle moduler sekilde genisletin.
 
-## Installation
+## Kurulum
 
 ```bash
 npm install discordjs-nextgen
 ```
 
-## Quick Start
+## Hizli Baslangic
 
 ```ts
 import { App, Intents, Logger, cooldown } from 'discordjs-nextgen';
@@ -30,7 +30,7 @@ const app = new App({
 
 app
   .use(Logger({
-    colors: { info: 'cyan', error: 'red' },
+    colors: { info: 'cyan', error: 'red' }
   }))
   .use(cooldown(3))
   .command({ folder: 'commands/hybrid' })
@@ -43,27 +43,31 @@ app
   .run('YOUR_DISCORD_TOKEN');
 ```
 
-## Core Concepts
+> Onemli Not: Discord API geregi modallar sadece interaction uzerinden acilabilir. Prefix komutlari veya `messageCreate` gibi mesaj tabanli eventlerde modal gosterilemez.
 
-### Hybrid Command
+## Moduler Kullanim
+
+### Hibrit Komut
 
 ```ts
 import { HybridCommand } from 'discordjs-nextgen';
 
-const ping: HybridCommand = {
+const pingHybrid: HybridCommand = {
   name: 'ping',
-  description: 'Measure latency',
+  description: 'Gecikmeyi olcer',
   aliases: ['p'],
+  usage: 'ping',
+  category: 'genel',
   run: async (ctx) => {
     const delay = Date.now() - ctx.createdAt.getTime();
-    await ctx.reply(`Pong! Latency: **${delay}ms**`);
+    await ctx.reply(`Pong! Gecikme: **${delay}ms**`);
   },
 };
 
-export default ping;
+export default pingHybrid;
 ```
 
-### Button Handler
+### Buton Isleyici
 
 ```ts
 import { ButtonHandler } from 'discordjs-nextgen';
@@ -71,7 +75,7 @@ import { ButtonHandler } from 'discordjs-nextgen';
 const verifyButton: ButtonHandler = {
   customId: 'verify_user',
   run: async (ctx) => {
-    await ctx.reply({ content: 'Verified!', ephemeral: true });
+    await ctx.reply({ content: 'Dogrulandiniz!', ephemeral: true });
   },
 };
 
@@ -84,12 +88,12 @@ export default verifyButton;
 import { Modal } from 'discordjs-nextgen';
 
 const feedbackModal = Modal.create('feedback_form')
-  .title('Feedback')
-  .short('name', { label: 'Your name' })
-  .paragraph('comment', { label: 'Your comment', min: 10, max: 1000 })
+  .title('Geri Bildirim')
+  .short('name', { label: 'Adiniz' })
+  .paragraph('comment', { label: 'Yorumunuz', min: 10, max: 1000 })
   .onSubmit(async (ctx) => {
     await ctx.reply({
-      content: `Thanks ${ctx.values.name}! Your feedback was received.`,
+      content: `Tesekkurler ${ctx.values.name}! Yorumunuz alindi.`,
       ephemeral: true,
     });
   });
@@ -97,27 +101,27 @@ const feedbackModal = Modal.create('feedback_form')
 export default feedbackModal;
 ```
 
-### Select Menu
+### Secim Menusu
 
 ```ts
 import { Select } from 'discordjs-nextgen';
 
 const colorSelect = Select.create('color_pick')
-  .placeholder('Choose a color')
+  .placeholder('Bir renk secin')
   .options([
-    { label: 'Red', value: 'red' },
-    { label: 'Blue', value: 'blue' },
+    { label: 'Kirmizi', value: 'red' },
+    { label: 'Mavi', value: 'blue' },
   ])
   .onSelect(async (ctx) => {
-    await ctx.reply(`Selected color: ${ctx.values.color_pick}`);
+    await ctx.reply(`Secilen renk: ${ctx.values.color_pick}`);
   });
 
 export default colorSelect;
 ```
 
-## Context API
+## Context Sistemi
 
-`ctx` normalizes both message and interaction flows:
+`ctx` nesnesi hem mesaj hem interaction akislarini normalize eder:
 
 - `ctx.user`
 - `ctx.guild`
@@ -132,20 +136,20 @@ export default colorSelect;
 - `ctx.isInteraction`
 - `ctx.createdAt`
 
-## Plugin System
+## Plugin Sistemi
 
 ```ts
 app.use({
   name: 'my-plugin',
   setup: (bot) => {
     bot.on('ready', (user) => {
-      console.log(`${user.tag} is ready`);
+      console.log(`${user.tag} hazir`);
     });
   },
 });
 ```
 
-## API Highlights
+## API Ozetleri
 
 ### `App`
 
@@ -161,7 +165,7 @@ app.use({
 - `.run(token)`
 - `.login(token)`
 
-### Helpers
+### Yardimcilar
 
 - `Logger(options?)`
 - `cooldown(seconds)`
@@ -171,11 +175,6 @@ app.use({
 - `Modal`
 - `Select`
 
-## Notes
-
-- Discord modals can only be opened from interactions, not regular message events.
-- Prefix, slash, button, modal, and select flows can all share middleware.
-
-## License
+## Lisans
 
 MIT
