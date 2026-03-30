@@ -88,6 +88,8 @@ export interface HybridOptions extends Partial<Omit<HybridCommand, 'run' | 'name
 }
 
 export class App extends EventEmitter {
+  static FileLoader = FileLoader;
+
   readonly rest: RESTClient;
   readonly guilds: Map<string, Guild> = new Map();
   readonly users: Map<string, User> = new Map();
