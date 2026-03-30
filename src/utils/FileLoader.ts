@@ -2,13 +2,27 @@ import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
 
+export type FileLoadTransform = (
+  filePath: string,
+) => Promise<string | null | undefined> | string | null | undefined;
+
 export class FileLoader {
+  private static transforms: FileLoadTransform[] = [];
+
+  static registerTransform(transform: FileLoadTransform): void {
+    this.transforms.push(transform);
+  }
+
+  static clearTransforms(): void {
+    this.transforms = [];
+  }
+
   static async loadFiles<T>(dir: string): Promise<T[]> {
     const results: T[] = [];
     const absolutePath = path.isAbsolute(dir) ? dir : path.join(process.cwd(), dir);
 
     if (!fs.existsSync(absolutePath)) {
-      console.warn(`[FileLoader] Klasör bulunamadı: ${absolutePath}`);
+      console.warn(`[FileLoader] Klasor bulunamadi: ${absolutePath}`);
       return [];
     }
 
@@ -20,36 +34,52 @@ export class FileLoader {
       if (file.isDirectory()) {
         const nested = await this.loadFiles<T>(filePath);
         results.push(...nested);
-      } else if (file.name.endsWith('.ts') || file.name.endsWith('.js')) {
-        // Dinamik olarak dosyayı yükle
-        try {
-          let imported: any;
-          
-          // CommonJS ve ESM uyumluluğu için
-          try {
-            // Önce standard require deniyoruz (CJS/ts-node için)
-            // Not: require.resolve ile dosyanın varlığını teyit edebiliriz
-            const resolvedPath = require.resolve(filePath);
-            // Cache'i temizle (Opsiyonel: Komutları reload etmek istersen)
-            delete require.cache[resolvedPath];
-            imported = require(resolvedPath);
-          } catch (err) {
-            // Eğer require başarısız olursa (ESM ortamı), import() kullanıyoruz
-            const fileUrl = pathToFileURL(filePath).href;
-            imported = await import(fileUrl);
-          }
+        continue;
+      }
 
-          // Default export varsa onu al, yoksa direkt import edilen objeyi al
-          const command = imported.default || imported;
-          if (command) {
-            results.push(command);
+      if (!this.isSupportedFile(file.name)) {
+        continue;
+      }
+
+      try {
+        let imported: any;
+        let loadPath = filePath;
+
+        for (const transform of this.transforms) {
+          const transformedPath = await transform(filePath);
+          if (transformedPath) {
+            loadPath = transformedPath;
+            break;
           }
-        } catch (error) {
-          console.error(`[FileLoader] Dosya yüklenirken hata oluştu: ${filePath}`, error);
         }
+
+        try {
+          const resolvedPath = require.resolve(loadPath);
+          delete require.cache[resolvedPath];
+          imported = require(resolvedPath);
+        } catch {
+          const fileUrl = pathToFileURL(loadPath).href;
+          imported = await import(fileUrl);
+        }
+
+        const command = imported.default || imported;
+        if (command) {
+          results.push(command);
+        }
+      } catch (error) {
+        console.error(`[FileLoader] Dosya yuklenirken hata olustu: ${filePath}`, error);
       }
     }
 
     return results;
+  }
+
+  private static isSupportedFile(fileName: string): boolean {
+    return (
+      fileName.endsWith('.js') ||
+      fileName.endsWith('.ts') ||
+      fileName.endsWith('.jsx') ||
+      fileName.endsWith('.tsx')
+    );
   }
 }

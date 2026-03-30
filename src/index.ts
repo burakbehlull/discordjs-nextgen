@@ -24,6 +24,8 @@ export type { InteractionReplyOptions } from './structures/Interaction.js';
 export { Logger } from './utils/Logger.js';
 export type { LoggerOptions, LoggerColor } from './utils/Logger.js';
 export { Cooldown, cooldown } from './utils/Cooldown.js';
+export { FileLoader } from './utils/FileLoader.js';
+export type { FileLoadTransform } from './utils/FileLoader.js';
 export { Permission } from './utils/Permission.js';
 export type { PermissionName } from './utils/Permission.js';
 
