@@ -3,10 +3,13 @@ import type { RawEmbed, RawChannel } from '../types/raw.js';
 import { EmbedBuilder } from '../builders/EmbedBuilder.js';
 import type { ActionRowBuilder } from '../builders/ButtonBuilder.js';
 
+type MessageComponentLike = ActionRowBuilder | Record<string, unknown>;
+
 export interface MessageSendOptions {
   content?: string;
   embeds?: EmbedBuilder[];
-  components?: ActionRowBuilder[];
+  components?: MessageComponentLike[];
+  flags?: number;
 }
 
 export class Channel {
@@ -68,7 +71,12 @@ export class Channel {
       payload.embeds = options.embeds.map((e) => e.toJSON() as unknown as RawEmbed);
     }
     if (options.components) {
-      payload.components = options.components.map((r) => r.toJSON());
+      payload.components = options.components.map((r) =>
+        typeof (r as any)?.toJSON === 'function' ? (r as any).toJSON() : r
+      );
+    }
+    if (options.flags !== undefined) {
+      payload.flags = options.flags;
     }
     return payload;
   }

@@ -5,6 +5,8 @@ import { Channel } from './Channel.js';
 import type { EmbedBuilder } from '../builders/EmbedBuilder.js';
 import type { ActionRowBuilder } from '../builders/ButtonBuilder.js';
 
+type MessageComponentLike = ActionRowBuilder | Record<string, unknown>;
+
 export interface Member {
   nick: string | null;
   roles: string[];
@@ -15,7 +17,8 @@ export interface Member {
 export interface MessageReplyOptions {
   content?: string;
   embeds?: EmbedBuilder[];
-  components?: ActionRowBuilder[];
+  components?: MessageComponentLike[];
+  flags?: number;
 }
 
 export class Message {
@@ -70,7 +73,8 @@ export class Message {
         : {
             content: options.content,
             embeds: options.embeds?.map((e) => e.toJSON()),
-            components: options.components?.map((r) => r.toJSON()),
+            components: options.components?.map((r) => (typeof (r as any)?.toJSON === 'function' ? (r as any).toJSON() : r)),
+            flags: options.flags,
           };
 
     const data = await this.rest.post<RawMessage>(`/channels/${this.channelId}/messages`, {
@@ -87,7 +91,8 @@ export class Message {
         : {
             content: options.content,
             embeds: options.embeds?.map((e) => e.toJSON()),
-            components: options.components?.map((r) => r.toJSON()),
+            components: options.components?.map((r) => (typeof (r as any)?.toJSON === 'function' ? (r as any).toJSON() : r)),
+            flags: options.flags,
           };
 
     const data = await this.rest.patch<RawMessage>(

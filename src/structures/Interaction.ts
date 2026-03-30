@@ -8,10 +8,12 @@ import type { Modal } from '../builders/ModalBuilder.js';
 import type { PermissionName } from '../utils/Permission.js';
 import type { Member } from './Message.js';
 
+type MessageComponentLike = ActionRowBuilder | Record<string, unknown>;
+
 export interface InteractionReplyOptions {
   content?: string;
   embeds?: EmbedBuilder[];
-  components?: ActionRowBuilder[];
+  components?: MessageComponentLike[];
   ephemeral?: boolean;
 }
 
@@ -177,7 +179,9 @@ export class Interaction {
     return {
       ...rest,
       embeds: embeds?.map((e) => e.toJSON()),
-      components: components?.map((c) => c.toJSON()),
+      components: components?.map((c) =>
+        typeof (c as any)?.toJSON === 'function' ? (c as any).toJSON() : c
+      ),
       flags: ephemeral ? 64 : 0,
     };
   }
