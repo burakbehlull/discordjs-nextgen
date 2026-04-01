@@ -1,5 +1,5 @@
 import type { RESTClient } from '../rest/RESTClient.js';
-import type { RawInteraction } from '../types/raw.js';
+import type { RawEmbed, RawInteraction } from '../types/raw.js';
 import { User } from './User.js';
 import { Channel } from './Channel.js';
 import type { EmbedBuilder } from '../builders/EmbedBuilder.js';
@@ -9,12 +9,17 @@ import type { PermissionName } from '../utils/Permission.js';
 import type { Member } from './Message.js';
 
 type MessageComponentLike = ActionRowBuilder | Record<string, unknown>;
+type EmbedLike = EmbedBuilder | RawEmbed;
 
 export interface InteractionReplyOptions {
   content?: string;
-  embeds?: EmbedBuilder[];
+  embeds?: EmbedLike[];
   components?: MessageComponentLike[];
   ephemeral?: boolean;
+}
+
+function serializeEmbedLike(embed: unknown): unknown {
+  return typeof (embed as any)?.toJSON === 'function' ? (embed as any).toJSON() : embed;
 }
 
 export class Interaction {
@@ -178,7 +183,7 @@ export class Interaction {
     const { embeds, components, ephemeral, ...rest } = options;
     return {
       ...rest,
-      embeds: embeds?.map((e) => e.toJSON()),
+      embeds: embeds?.map((e) => serializeEmbedLike(e)),
       components: components?.map((c) =>
         typeof (c as any)?.toJSON === 'function' ? (c as any).toJSON() : c
       ),

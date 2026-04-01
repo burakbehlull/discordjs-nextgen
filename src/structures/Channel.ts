@@ -4,12 +4,17 @@ import { EmbedBuilder } from '../builders/EmbedBuilder.js';
 import type { ActionRowBuilder } from '../builders/ButtonBuilder.js';
 
 type MessageComponentLike = ActionRowBuilder | Record<string, unknown>;
+type EmbedLike = EmbedBuilder | RawEmbed;
 
 export interface MessageSendOptions {
   content?: string;
-  embeds?: EmbedBuilder[];
+  embeds?: EmbedLike[];
   components?: MessageComponentLike[];
   flags?: number;
+}
+
+function serializeEmbedLike(embed: unknown): unknown {
+  return typeof (embed as any)?.toJSON === 'function' ? (embed as any).toJSON() : embed;
 }
 
 export class Channel {
@@ -68,7 +73,7 @@ export class Channel {
     const payload: Record<string, unknown> = {};
     if (options.content) payload.content = options.content;
     if (options.embeds) {
-      payload.embeds = options.embeds.map((e) => e.toJSON() as unknown as RawEmbed);
+      payload.embeds = options.embeds.map((e) => serializeEmbedLike(e) as RawEmbed);
     }
     if (options.components) {
       payload.components = options.components.map((r) =>

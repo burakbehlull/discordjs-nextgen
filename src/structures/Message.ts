@@ -1,11 +1,12 @@
 import type { RESTClient } from '../rest/RESTClient.js';
-import type { RawMessage, RawMember } from '../types/raw.js';
+import type { RawEmbed, RawMessage, RawMember } from '../types/raw.js';
 import { User } from './User.js';
 import { Channel } from './Channel.js';
 import type { EmbedBuilder } from '../builders/EmbedBuilder.js';
 import type { ActionRowBuilder } from '../builders/ButtonBuilder.js';
 
 type MessageComponentLike = ActionRowBuilder | Record<string, unknown>;
+type EmbedLike = EmbedBuilder | RawEmbed;
 
 export interface Member {
   nick: string | null;
@@ -16,9 +17,13 @@ export interface Member {
 
 export interface MessageReplyOptions {
   content?: string;
-  embeds?: EmbedBuilder[];
+  embeds?: EmbedLike[];
   components?: MessageComponentLike[];
   flags?: number;
+}
+
+function serializeEmbedLike(embed: unknown): unknown {
+  return typeof (embed as any)?.toJSON === 'function' ? (embed as any).toJSON() : embed;
 }
 
 export class Message {
@@ -72,7 +77,7 @@ export class Message {
         ? { content: options }
         : {
             content: options.content,
-            embeds: options.embeds?.map((e) => e.toJSON()),
+            embeds: options.embeds?.map((e) => serializeEmbedLike(e)),
             components: options.components?.map((r) => (typeof (r as any)?.toJSON === 'function' ? (r as any).toJSON() : r)),
             flags: options.flags,
           };
@@ -90,7 +95,7 @@ export class Message {
         ? { content: options }
         : {
             content: options.content,
-            embeds: options.embeds?.map((e) => e.toJSON()),
+            embeds: options.embeds?.map((e) => serializeEmbedLike(e)),
             components: options.components?.map((r) => (typeof (r as any)?.toJSON === 'function' ? (r as any).toJSON() : r)),
             flags: options.flags,
           };
