@@ -9,6 +9,35 @@ export interface RequestOptions {
   reason?: string;
 }
 
+function collectDiscordErrorDetails(
+  input: unknown,
+  path: string[] = [],
+  output: string[] = [],
+): string[] {
+  if (!input || typeof input !== 'object') {
+    return output;
+  }
+
+  const entry = input as Record<string, unknown>;
+  const rawErrors = entry._errors;
+  if (Array.isArray(rawErrors)) {
+    for (const rawError of rawErrors) {
+      if (!rawError || typeof rawError !== 'object') continue;
+      const message = (rawError as Record<string, unknown>).message;
+      if (typeof message === 'string' && message.length > 0) {
+        output.push(`${path.join('.') || 'body'}: ${message}`);
+      }
+    }
+  }
+
+  for (const [key, value] of Object.entries(entry)) {
+    if (key === '_errors') continue;
+    collectDiscordErrorDetails(value, [...path, key], output);
+  }
+
+  return output;
+}
+
 export class RESTClient {
   private token: string;
   private rateLimits: Map<string, { reset: number; remaining: number }> = new Map();
@@ -87,8 +116,12 @@ export class RESTClient {
                 return;
               }
               if (res.statusCode && res.statusCode >= 400) {
+                const details = collectDiscordErrorDetails((parsed as Record<string, unknown>).errors);
+                const detailsSuffix = details.length > 0
+                  ? `\n${details.join('\n')}`
+                  : '';
                 const err = new Error(
-                  `Discord API Error ${res.statusCode}: ${parsed.message ?? data}`
+                  `Discord API Error ${res.statusCode}: ${parsed.message ?? data}${detailsSuffix}`
                 ) as Error & { code?: number; status?: number };
                 err.code = parsed.code;
                 err.status = res.statusCode;
