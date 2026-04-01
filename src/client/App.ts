@@ -18,9 +18,13 @@ import { SlashCommandBuilder, type SlashCommandOption } from '../builders/SlashC
 import { FileLoader } from '../utils/FileLoader.js';
 import { MiddlewareManager, type MiddlewareFunction } from '../utils/MiddlewareManager.js';
 import { Context } from '../structures/Context.js';
+import { EventContext } from '../structures/EventContext.js';
 import { Permission, type PermissionName } from '../utils/Permission.js';
 import type { PresenceData, RawMessage, RawGuild, RawInteraction, RawUser, RawChannel } from '../types/raw.js';
 import { Intents } from '../types/constants.js';
+
+type RawMessageUpdate = Partial<Omit<RawMessage, 'id' | 'channel_id'>> & Pick<RawMessage, 'id' | 'channel_id'>;
+type RawChannelUpdate = Partial<Omit<RawChannel, 'id'>> & Pick<RawChannel, 'id'>;
 
 export interface HybridCommand {
   name: string;
@@ -42,11 +46,14 @@ export interface AppOptions {
 export interface AppEvents {
   ready: [user: User];
   messageCreate: [message: Message];
-  messageUpdate: [message: Message];
+  messageUpdate: [oldMessage: Message | null, newMessage: Message];
   messageDelete: [data: { id: string; channelId: string; guildId?: string }];
   interactionCreate: [interaction: Interaction];
   guildCreate: [guild: Guild];
   guildDelete: [data: { id: string }];
+  channelCreate: [channel: Channel];
+  channelUpdate: [oldChannel: Channel | null, newChannel: Channel];
+  channelDelete: [channel: Channel];
   voiceStateUpdate: [data: any];
   voiceServerUpdate: [data: any];
   error: [error: Error];
@@ -55,7 +62,7 @@ export interface AppEvents {
 export interface AppEvent<K extends keyof AppEvents = keyof AppEvents> {
   name: K;
   once?: boolean;
-  run: (...args: AppEvents[K]) => Promise<void> | void;
+  run: (ctx: EventContext, ...args: AppEvents[K]) => Promise<void> | void;
 }
 
 export interface AppPlugin {
@@ -94,6 +101,8 @@ export class App extends EventEmitter {
   readonly guilds: Map<string, Guild> = new Map();
   readonly users: Map<string, User> = new Map();
   readonly channels: Map<string, Channel> = new Map();
+  private readonly messageSnapshots: Map<string, RawMessage> = new Map();
+  private readonly channelSnapshots: Map<string, RawChannel> = new Map();
 
   private gateway: Gateway | null = null;
   private token: string | null = null;
@@ -109,7 +118,7 @@ export class App extends EventEmitter {
   private readonly voiceAdapters: Map<string, Set<VoiceAdapterLibraryMethods>> = new Map();
   user: User | null = null;
 
-  constructor(private options: AppOptions = {}) {
+  constructor(public readonly options: AppOptions = {}) {
     super();
     this.rest = new RESTClient('');
   }
@@ -282,11 +291,12 @@ export class App extends EventEmitter {
 
   events(folderPath: string): this {
     FileLoader.loadFiles<AppEvent>(folderPath).then((events) => {
+      const ctx = new EventContext(this);
       for (const event of events) {
         if (event.once) {
-          this.once(event.name, (...args) => event.run(...args));
+          this.once(event.name, (...args) => event.run(ctx, ...args));
         } else {
-          this.on(event.name, (...args) => event.run(...args));
+          this.on(event.name, (...args) => event.run(ctx, ...args));
         }
       }
       Logger.success(`${events.length} event [${folderPath}] klasorunden yuklendi.`);
@@ -399,19 +409,28 @@ export class App extends EventEmitter {
       }
 
       case 'MESSAGE_CREATE': {
-        const msg = new Message(data as RawMessage, this.rest);
+        const rawMessage = data as RawMessage;
+        const msg = new Message(rawMessage, this.rest);
+        this.messageSnapshots.set(msg.id, rawMessage);
         this.emit('messageCreate', msg);
         break;
       }
 
       case 'MESSAGE_UPDATE': {
-        const msg = new Message(data as RawMessage, this.rest);
-        this.emit('messageUpdate', msg);
+        const incomingMessage = data as RawMessageUpdate;
+        const previousSnapshot = this.messageSnapshots.get(incomingMessage.id);
+        const nextSnapshot = this.normalizeMessageSnapshot(incomingMessage, previousSnapshot);
+        const oldMessage = previousSnapshot ? new Message(previousSnapshot, this.rest) : null;
+        const newMessage = new Message(nextSnapshot, this.rest);
+
+        this.messageSnapshots.set(newMessage.id, nextSnapshot);
+        this.emit('messageUpdate', oldMessage, newMessage);
         break;
       }
 
       case 'MESSAGE_DELETE': {
         const deleteData = data as { id: string; channel_id: string; guild_id?: string };
+        this.messageSnapshots.delete(deleteData.id);
         this.emit('messageDelete', {
           id: deleteData.id,
           channelId: deleteData.channel_id,
@@ -425,6 +444,7 @@ export class App extends EventEmitter {
         this.guilds.set(guild.id, guild);
         for (const [id, channel] of guild.channels) {
           this.channels.set(id, channel);
+          this.channelSnapshots.set(id, this.channelToRaw(channel));
         }
         this.emit('guildCreate', guild);
         break;
@@ -436,11 +456,46 @@ export class App extends EventEmitter {
         if (guild) {
           for (const channelId of guild.channels.keys()) {
             this.channels.delete(channelId);
+            this.channelSnapshots.delete(channelId);
           }
         }
         this.guilds.delete(guildDeleteData.id);
         this.voiceAdapters.delete(guildDeleteData.id);
         this.emit('guildDelete', { id: guildDeleteData.id });
+        break;
+      }
+
+      case 'CHANNEL_CREATE': {
+        const rawChannel = data as RawChannel;
+        const channel = new Channel(rawChannel, this.rest);
+        this.channels.set(channel.id, channel);
+        this.channelSnapshots.set(channel.id, rawChannel);
+        this.emit('channelCreate', channel);
+        break;
+      }
+
+      case 'CHANNEL_UPDATE': {
+        const incomingChannel = data as RawChannelUpdate;
+        const previousSnapshot = this.channelSnapshots.get(incomingChannel.id);
+        const nextSnapshot = this.normalizeChannelSnapshot(incomingChannel, previousSnapshot);
+        const oldChannel = previousSnapshot ? new Channel(previousSnapshot, this.rest) : null;
+        const newChannel = new Channel(nextSnapshot, this.rest);
+
+        this.channels.set(newChannel.id, newChannel);
+        this.channelSnapshots.set(newChannel.id, nextSnapshot);
+        this.emit('channelUpdate', oldChannel, newChannel);
+        break;
+      }
+
+      case 'CHANNEL_DELETE': {
+        const incomingChannel = data as RawChannelUpdate;
+        const previousSnapshot = this.channelSnapshots.get(incomingChannel.id);
+        const deletedSnapshot = this.normalizeChannelSnapshot(incomingChannel, previousSnapshot);
+        const channel = new Channel(deletedSnapshot, this.rest);
+
+        this.channels.delete(channel.id);
+        this.channelSnapshots.delete(channel.id);
+        this.emit('channelDelete', channel);
         break;
       }
 
@@ -493,6 +548,7 @@ export class App extends EventEmitter {
     const data = await this.rest.get<RawChannel>(`/channels/${channelId}`);
     const channel = new Channel(data, this.rest);
     this.channels.set(channel.id, channel);
+    this.channelSnapshots.set(channel.id, data);
     return channel;
   }
 
@@ -500,7 +556,62 @@ export class App extends EventEmitter {
     const data = await this.rest.get<RawGuild>(`/guilds/${guildId}?with_counts=true`);
     const guild = new Guild(data, this.rest);
     this.guilds.set(guild.id, guild);
+    for (const [id, channel] of guild.channels) {
+      this.channels.set(id, channel);
+      this.channelSnapshots.set(id, this.channelToRaw(channel));
+    }
     return guild;
+  }
+
+  private normalizeMessageSnapshot(data: RawMessageUpdate, previous?: RawMessage): RawMessage {
+    return {
+      id: data.id,
+      channel_id: data.channel_id ?? previous?.channel_id ?? '',
+      guild_id: data.guild_id ?? previous?.guild_id,
+      author: data.author ?? previous?.author ?? {
+        id: '0',
+        username: 'Unknown User',
+        discriminator: '0000',
+      },
+      content: data.content ?? previous?.content ?? '',
+      timestamp: data.timestamp ?? previous?.timestamp ?? new Date().toISOString(),
+      edited_timestamp: data.edited_timestamp ?? previous?.edited_timestamp,
+      attachments: data.attachments ?? previous?.attachments ?? [],
+      embeds: data.embeds ?? previous?.embeds ?? [],
+      mentions: data.mentions ?? previous?.mentions ?? [],
+      mention_everyone: data.mention_everyone ?? previous?.mention_everyone ?? false,
+      pinned: data.pinned ?? previous?.pinned ?? false,
+      type: data.type ?? previous?.type ?? 0,
+      member: data.member ?? previous?.member,
+    };
+  }
+
+  private normalizeChannelSnapshot(data: RawChannelUpdate, previous?: RawChannel): RawChannel {
+    return {
+      id: data.id,
+      type: data.type ?? previous?.type ?? 0,
+      guild_id: data.guild_id ?? previous?.guild_id,
+      name: data.name ?? previous?.name,
+      topic: data.topic ?? previous?.topic,
+      nsfw: data.nsfw ?? previous?.nsfw,
+      last_message_id: data.last_message_id ?? previous?.last_message_id,
+      position: data.position ?? previous?.position,
+      parent_id: data.parent_id ?? previous?.parent_id,
+    };
+  }
+
+  private channelToRaw(channel: Channel): RawChannel {
+    return {
+      id: channel.id,
+      type: channel.type,
+      guild_id: channel.guildId ?? undefined,
+      name: channel.name ?? undefined,
+      topic: channel.topic ?? undefined,
+      nsfw: channel.nsfw,
+      last_message_id: channel.lastMessageId ?? undefined,
+      position: channel.position ?? undefined,
+      parent_id: channel.parentId ?? undefined,
+    };
   }
 
   async registerCommands(commands: SlashCommandBuilder[], guildId?: string): Promise<void> {
@@ -537,6 +648,8 @@ export class App extends EventEmitter {
     this.gateway = null;
     this.token = null;
     this.user = null;
+    this.messageSnapshots.clear();
+    this.channelSnapshots.clear();
     this.voiceAdapters.clear();
   }
 

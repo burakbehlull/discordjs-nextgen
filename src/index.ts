@@ -2,6 +2,7 @@ export { App } from './client/App.js';
 export type { AppOptions, AppEvents, AppEvent, AppPlugin, HybridCommand, VoiceAdapterCreator } from './client/App.js';
 
 export { Context } from './structures/Context.js';
+export { EventContext } from './structures/EventContext.js';
 export { EmbedBuilder } from './builders/EmbedBuilder.js';
 export type { SlashCommandOption, SlashCommandOptionType } from './builders/SlashCommandBuilder.js';
 export { ButtonBuilder, ActionRowBuilder } from './builders/ButtonBuilder.js';
