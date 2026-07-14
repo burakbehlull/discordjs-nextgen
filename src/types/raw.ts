@@ -103,6 +103,7 @@ export interface RawInteraction {
   user?: RawUser;
   token: string;
   version: number;
+  entitlements?: any[];
 }
 
 export interface RawInteractionData {
@@ -113,6 +114,8 @@ export interface RawInteractionData {
   options?: RawInteractionOption[];
   components?: RawComponent[];
   values?: string[];
+  target_id?: string;
+  resolved?: any;
 }
 
 export interface RawTextInputComponent {
@@ -132,6 +135,7 @@ export interface RawInteractionOption {
   type: number;
   value?: string | number | boolean;
   options?: RawInteractionOption[];
+  focused?: boolean;
 }
 
 export type ActivityType = 0 | 1 | 2 | 3 | 4 | 5;

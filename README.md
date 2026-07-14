@@ -12,6 +12,11 @@ Simple, fast, and modular Discord bot framework with both ESM and CommonJS suppo
 - Middleware support
 - Unified `Context` abstraction
 - Plugin system for modular extensions
+- **Autocomplete support for slash commands**
+- **Context Menu Commands (User & Message)**
+- **New Select Menu Types (User, Role, Mentionable, Channel)**
+- **Monetization & Entitlements support**
+- **Localization (i18n) for commands**
 
 ## Installation
 
@@ -63,6 +68,92 @@ const ping: HybridCommand = {
 export default ping;
 ```
 
+### Slash Command with Autocomplete
+
+```ts
+import { SlashCommand, SlashCommandBuilder } from 'discordjs-nextgen';
+
+const searchCommand: SlashCommand = {
+  data: new SlashCommandBuilder()
+    .setName('search')
+    .setDescription('Search for something')
+    .addOption({
+      name: 'query',
+      description: 'Search query',
+      type: 'string',
+      autocomplete: true,
+    }),
+  autocomplete: async (ctx) => {
+    const query = ctx.getFocused() as string;
+    const choices = [
+      { name: 'Option 1', value: 'opt1' },
+      { name: 'Option 2', value: 'opt2' },
+    ];
+    await ctx.respond(choices);
+  },
+  run: async (ctx) => {
+    await ctx.reply(`You searched for: ${ctx.values.query}`);
+  },
+};
+
+export default searchCommand;
+```
+
+### Context Menu Commands
+
+```ts
+import { SlashCommand, SlashCommandBuilder } from 'discordjs-nextgen';
+
+// User Context Menu (Right-click → Apps)
+const userInfoCommand: SlashCommand = {
+  data: new SlashCommandBuilder()
+    .setName('User Info')
+    .setType(2), // 2 = USER
+  run: async (ctx) => {
+    const targetUser = ctx.targetUser;
+    await ctx.reply(`User: ${targetUser?.tag}`);
+  },
+};
+
+// Message Context Menu (Right-click → Apps)
+const messageInfoCommand: SlashCommand = {
+  data: new SlashCommandBuilder()
+    .setName('Message Info')
+    .setType(3), // 3 = MESSAGE
+  run: async (ctx) => {
+    const targetMessage = ctx.targetMessage;
+    await ctx.reply(`Message content: ${targetMessage?.content}`);
+  },
+};
+
+export { userInfoCommand, messageInfoCommand };
+```
+
+### Localization (i18n) for Slash Commands
+
+```ts
+import { SlashCommand, SlashCommandBuilder } from 'discordjs-nextgen';
+
+const greetCommand: SlashCommand = {
+  data: new SlashCommandBuilder()
+    .setName('greet')
+    .setDescription('Greet someone')
+    .setNameLocalizations({
+      'tr': 'selamla',
+      'es': 'saludar',
+    })
+    .setDescriptionLocalizations({
+      'tr': 'Birini selamla',
+      'es': 'Saludar a alguien',
+    }),
+  run: async (ctx) => {
+    await ctx.reply('Hello!');
+  },
+};
+
+export default greetCommand;
+```
+
 ### Button Handler
 
 ```ts
@@ -97,11 +188,12 @@ const feedbackModal = Modal.create('feedback_form')
 export default feedbackModal;
 ```
 
-### Select Menu
+### Select Menus (All Types)
 
 ```ts
 import { Select } from 'discordjs-nextgen';
 
+// String Select
 const colorSelect = Select.create('color_pick')
   .placeholder('Choose a color')
   .options([
@@ -112,7 +204,72 @@ const colorSelect = Select.create('color_pick')
     await ctx.reply(`Selected color: ${ctx.values.color_pick}`);
   });
 
-export default colorSelect;
+// User Select
+const userSelect = Select.create('user_pick', { type: 'user' })
+  .placeholder('Choose a user')
+  .onSelect(async (ctx) => {
+    await ctx.reply(`Selected user: ${ctx.values.user_pick}`);
+  });
+
+// Role Select
+const roleSelect = Select.create('role_pick', { type: 'role' })
+  .placeholder('Choose a role')
+  .onSelect(async (ctx) => {
+    await ctx.reply(`Selected role: ${ctx.values.role_pick}`);
+  });
+
+// Mentionable Select (User + Role)
+const mentionableSelect = Select.create('mentionable_pick', { type: 'mentionable' })
+  .placeholder('Choose a user or role')
+  .onSelect(async (ctx) => {
+    await ctx.reply(`Selected: ${ctx.values.mentionable_pick}`);
+  });
+
+// Channel Select
+const channelSelect = Select.create('channel_pick', { type: 'channel' })
+  .placeholder('Choose a channel')
+  .channelTypes([0, 5]) // 0 = Text, 5 = Announcement
+  .onSelect(async (ctx) => {
+    await ctx.reply(`Selected channel: ${ctx.values.channel_pick}`);
+  });
+
+export { colorSelect, userSelect, roleSelect, mentionableSelect, channelSelect };
+```
+
+## Monetization & Entitlements
+
+```ts
+import { SlashCommand } from 'discordjs-nextgen';
+
+const premiumCommand: SlashCommand = {
+  data: new SlashCommandBuilder()
+    .setName('premium')
+    .setDescription('Premium feature'),
+  run: async (ctx) => {
+    // Check if user has premium for a specific SKU
+    if (ctx.hasPremium('YOUR_SKU_ID')) {
+      await ctx.reply('Welcome premium user!');
+    } else {
+      await ctx.reply('You need premium to use this feature!');
+    }
+
+    // Or check all entitlements
+    console.log(ctx.entitlements);
+  },
+};
+
+// Entitlement Events
+app.on('entitlementCreate', (entitlement) => {
+  console.log('New entitlement:', entitlement);
+});
+
+app.on('entitlementUpdate', (oldEntitlement, newEntitlement) => {
+  console.log('Entitlement updated:', newEntitlement);
+});
+
+app.on('entitlementDelete', (entitlement) => {
+  console.log('Entitlement deleted:', entitlement);
+});
 ```
 
 ## Context API
@@ -131,6 +288,20 @@ export default colorSelect;
 - `ctx.args`
 - `ctx.isInteraction`
 - `ctx.createdAt`
+- `ctx.commandName`
+- `ctx.customId`
+- `ctx.isCommand`
+- `ctx.isSlashCommand`
+- `ctx.isUserContext`
+- `ctx.isMessageContext`
+- `ctx.isModalSubmit`
+- `ctx.targetId`
+- `ctx.targetUser`
+- `ctx.targetMessage`
+- `ctx.entitlements`
+- `ctx.hasPremium(skuId)`
+- `ctx.getFocused(withValue?)`
+- `ctx.respond(choices)` (for autocomplete)
 
 ## Plugin System
 
@@ -170,12 +341,29 @@ app.use({
 - `ActionRowBuilder`
 - `Modal`
 - `Select`
+- `SlashCommandBuilder`
+
+## Events
+
+- `ready`
+- `messageCreate`
+- `messageUpdate`
+- `messageDelete`
+- `guildCreate`
+- `guildDelete`
+- `channelCreate`
+- `channelUpdate`
+- `channelDelete`
+- `interactionCreate`
+- `voiceStateUpdate`
+- `voiceServerUpdate`
+- `entitlementCreate`
+- `entitlementUpdate`
+- `entitlementDelete`
+- `error`
 
 ## Notes
 
 - Discord modals can only be opened from interactions, not regular message events.
 - Prefix, slash, button, modal, and select flows can all share middleware.
-
-## License
-
-MIT
+- Context menu commands use type 2 (USER) or 3 (MESSAGE) in SlashCommandBuilder.

@@ -20,7 +20,7 @@ export { Guild } from './structures/Guild.js';
 export { Message } from './structures/Message.js';
 export type { MessageReplyOptions, Member } from './structures/Message.js';
 export { Interaction } from './structures/Interaction.js';
-export type { InteractionReplyOptions } from './structures/Interaction.js';
+export type { InteractionReplyOptions, Entitlement } from './structures/Interaction.js';
 
 export { Logger } from './utils/Logger.js';
 export type { LoggerOptions, LoggerColor } from './utils/Logger.js';

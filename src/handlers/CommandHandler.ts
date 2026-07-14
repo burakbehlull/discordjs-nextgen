@@ -8,6 +8,7 @@ export interface SlashCommand {
   usage?: string;
   category?: string;
   run: (ctx: Context) => Promise<void> | void;
+  autocomplete?: (ctx: Context) => Promise<void> | void;
 }
 
 export interface CommandHandlerOptions {
@@ -50,18 +51,28 @@ export class CommandHandler {
   }
 
   async handle(interaction: Interaction, ctx: Context): Promise<void> {
-    if (!interaction.isCommand) return;
+    if (!interaction.isCommand && !interaction.isAutocomplete) return;
     if (!interaction.commandName) return;
 
     const cmd = this.commands.get(interaction.commandName);
     if (!cmd) return;
 
     try {
-      await cmd.run(ctx);
+      if (interaction.isAutocomplete) {
+        if (cmd.autocomplete) {
+          await cmd.autocomplete(ctx);
+        }
+      } else {
+        await cmd.run(ctx);
+      }
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
       const msg = `Komut çalıştırılırken hata oluştu: \`${error}\``;
-      await ctx.reply({ content: msg, ephemeral: true }).catch(() => null);
+      
+      // Respond to command execution errors, ignore autocomplete errors reply since it's not supported
+      if (!interaction.isAutocomplete) {
+        await ctx.reply({ content: msg, ephemeral: true }).catch(() => null);
+      }
     }
   }
 

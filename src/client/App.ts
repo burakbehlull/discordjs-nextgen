@@ -5,7 +5,7 @@ import { Message } from '../structures/Message.js';
 import { User } from '../structures/User.js';
 import { Guild } from '../structures/Guild.js';
 import { Channel } from '../structures/Channel.js';
-import { Interaction } from '../structures/Interaction.js';
+import { Interaction, type Entitlement } from '../structures/Interaction.js';
 import { Logger } from '../utils/Logger.js';
 import { PrefixHandler, type PrefixOptions, type PrefixCommand } from '../handlers/PrefixHandler.js';
 import { CommandHandler, type CommandHandlerOptions, type SlashCommand } from '../handlers/CommandHandler.js';
@@ -56,6 +56,9 @@ export interface AppEvents {
   channelDelete: [channel: Channel];
   voiceStateUpdate: [data: any];
   voiceServerUpdate: [data: any];
+  entitlementCreate: [entitlement: Entitlement];
+  entitlementUpdate: [oldEntitlement: Entitlement | null, newEntitlement: Entitlement];
+  entitlementDelete: [entitlement: Entitlement];
   error: [error: Error];
 }
 
@@ -103,6 +106,7 @@ export class App extends EventEmitter {
   readonly channels: Map<string, Channel> = new Map();
   private readonly messageSnapshots: Map<string, RawMessage> = new Map();
   private readonly channelSnapshots: Map<string, RawChannel> = new Map();
+  private readonly entitlementSnapshots: Map<string, any> = new Map();
 
   private gateway: Gateway | null = null;
   private token: string | null = null;
@@ -215,9 +219,20 @@ export class App extends EventEmitter {
     return this.button(options, callback);
   }
 
-  modal(options: Modal | { folder: string }): this {
+  modal(
+    options:
+      | Modal
+      | string
+      | { folder: string }
+      | { customId: string | RegExp; run: (ctx: Context) => Promise<void> | void },
+    callback?: (ctx: Context) => Promise<void> | void
+  ): this {
     if (options instanceof Modal) {
       this.modalHandler.addModal(options);
+    } else if (typeof options === 'string' && callback) {
+      this.modalHandler.addHandler(options, callback);
+    } else if (typeof options === 'object' && 'customId' in options && 'run' in options) {
+      this.modalHandler.addHandler((options as any).customId, (options as any).run);
     } else if (typeof options === 'object' && 'folder' in options) {
       FileLoader.loadFiles<Modal>(options.folder).then((modals) => {
         for (const modal of modals) {
@@ -232,8 +247,19 @@ export class App extends EventEmitter {
     return this;
   }
 
-  select(options: string | Select | SelectHandlerOptions): this {
-    if (typeof options === 'string' || (typeof options === 'object' && 'folder' in options)) {
+  select(
+    options:
+      | string
+      | Select
+      | SelectHandlerOptions
+      | { customId: string | RegExp; run: (ctx: Context) => Promise<void> | void },
+    callback?: (ctx: Context) => Promise<void> | void
+  ): this {
+    if (typeof options === 'string' && callback) {
+      this.selectHandler.addHandler(options, callback);
+    } else if (typeof options === 'object' && 'customId' in options && 'run' in options) {
+      this.selectHandler.addHandler((options as any).customId, (options as any).run);
+    } else if (typeof options === 'string' || (typeof options === 'object' && 'folder' in options)) {
       const folder = typeof options === 'string' ? options : (options as SelectHandlerOptions).folder;
       if (folder) this.selectHandler.loadFromFolder(folder);
     } else {
@@ -534,7 +560,47 @@ export class App extends EventEmitter {
         this.emit('interactionCreate', interaction);
         break;
       }
+
+      case 'ENTITLEMENT_CREATE': {
+        const raw = data as any;
+        const entitlement = this.parseEntitlement(raw);
+        this.entitlementSnapshots.set(entitlement.id, raw);
+        this.emit('entitlementCreate', entitlement);
+        break;
+      }
+
+      case 'ENTITLEMENT_UPDATE': {
+        const raw = data as any;
+        const prev = this.entitlementSnapshots.get(raw.id);
+        const oldEntitlement = prev ? this.parseEntitlement(prev) : null;
+        const newEntitlement = this.parseEntitlement(raw);
+        this.entitlementSnapshots.set(newEntitlement.id, raw);
+        this.emit('entitlementUpdate', oldEntitlement, newEntitlement);
+        break;
+      }
+
+      case 'ENTITLEMENT_DELETE': {
+        const raw = data as any;
+        const entitlement = this.parseEntitlement(raw);
+        this.entitlementSnapshots.delete(entitlement.id);
+        this.emit('entitlementDelete', entitlement);
+        break;
+      }
     }
+  }
+
+  private parseEntitlement(e: any): Entitlement {
+    return {
+      id: e.id,
+      skuId: e.sku_id,
+      applicationId: e.application_id,
+      userId: e.user_id,
+      guildId: e.guild_id,
+      type: e.type,
+      deleted: e.deleted ?? false,
+      startsAt: e.starts_at ? new Date(e.starts_at) : undefined,
+      endsAt: e.ends_at ? new Date(e.ends_at) : undefined,
+    };
   }
 
   async fetchUser(userId: string): Promise<User> {
@@ -692,15 +758,15 @@ export class App extends EventEmitter {
             if (handled) return;
           }
 
-          if (interaction.isSelectMenu) {
-            const select = this.selectHandler.get(interaction.customId!);
-            if (select?.handler) {
-              await select.handler(ctx);
+          if (interaction.isSelectMenu && interaction.customId) {
+            const handler = this.selectHandler.getHandler(interaction.customId);
+            if (handler) {
+              await handler(ctx);
               return;
             }
           }
 
-          if (this.commandHandler && interaction.isCommand) {
+          if (this.commandHandler && (interaction.isCommand || interaction.isAutocomplete)) {
             await this.commandHandler.handle(interaction, ctx);
           }
         };

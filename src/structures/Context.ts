@@ -1,5 +1,5 @@
 import type { Message } from '../structures/Message.js';
-import type { Interaction } from '../structures/Interaction.js';
+import type { Interaction, Entitlement } from '../structures/Interaction.js';
 import type { User } from '../structures/User.js';
 import type { Guild } from '../structures/Guild.js';
 import type { Channel } from '../structures/Channel.js';
@@ -118,6 +118,18 @@ export class Context {
     return true;
   }
 
+  get isSlashCommand(): boolean {
+    return this.interaction?.isSlashCommand ?? false;
+  }
+
+  get isUserContext(): boolean {
+    return this.interaction?.isUserContext ?? false;
+  }
+
+  get isMessageContext(): boolean {
+    return this.interaction?.isMessageContext ?? false;
+  }
+
   get isModalSubmit(): boolean {
     return this.interaction?.isModalSubmit ?? false;
   }
@@ -130,5 +142,39 @@ export class Context {
     return this.isInteraction
       ? (this.source as Interaction).memberPermissions
       : (this.source as Message).memberPermissions;
+  }
+
+  get targetId(): string | null {
+    return this.interaction?.targetId ?? null;
+  }
+
+  get targetUser(): User | null {
+    return this.interaction?.targetUser ?? null;
+  }
+
+  get targetMessage(): Message | null {
+    return this.interaction?.targetMessage ?? null;
+  }
+
+  get entitlements(): Entitlement[] {
+    return this.interaction?.entitlements ?? [];
+  }
+
+  hasPremium(skuId: string): boolean {
+    return this.entitlements.some(
+      (e) => e.skuId === skuId && !e.deleted && (!e.endsAt || e.endsAt > new Date())
+    );
+  }
+
+  getFocused(withValue = false): any {
+    if (!this.isInteraction) return null;
+    return (this.source as Interaction).getFocused(withValue);
+  }
+
+  async respond(choices: Array<{ name: string; value: string | number }>): Promise<void> {
+    if (!this.isInteraction) {
+      throw new Error('respond sadece interaction contextinde kullanılabilir.');
+    }
+    await (this.source as Interaction).respond(choices);
   }
 }

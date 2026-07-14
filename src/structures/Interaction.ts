@@ -1,12 +1,12 @@
 import type { RESTClient } from '../rest/RESTClient.js';
-import type { RawEmbed, RawInteraction } from '../types/raw.js';
+import type { RawEmbed, RawInteraction, RawInteractionOption } from '../types/raw.js';
 import { User } from './User.js';
 import { Channel } from './Channel.js';
+import { Message, type Member } from './Message.js';
 import type { EmbedBuilder } from '../builders/EmbedBuilder.js';
 import type { ActionRowBuilder } from '../builders/ButtonBuilder.js';
 import type { Modal } from '../builders/ModalBuilder.js';
 import type { PermissionName } from '../utils/Permission.js';
-import type { Member } from './Message.js';
 
 type MessageComponentLike = ActionRowBuilder | Record<string, unknown>;
 type EmbedLike = EmbedBuilder | RawEmbed;
@@ -16,6 +16,18 @@ export interface InteractionReplyOptions {
   embeds?: EmbedLike[];
   components?: MessageComponentLike[];
   ephemeral?: boolean;
+}
+
+export interface Entitlement {
+  id: string;
+  skuId: string;
+  applicationId: string;
+  userId?: string;
+  guildId?: string;
+  type: number;
+  deleted: boolean;
+  startsAt?: Date;
+  endsAt?: Date;
 }
 
 function serializeEmbedLike(embed: unknown): unknown {
@@ -37,7 +49,12 @@ export class Interaction {
   public values: Record<string, any> = {};
   public _usedPrefix: string | null = null;
   readonly member: Member | null;
+  readonly targetId: string | null;
+  readonly targetUser: User | null = null;
+  readonly targetMessage: Message | null = null;
+  readonly entitlements: Entitlement[] = [];
   private options: Map<string, string | number | boolean>;
+  private focusedOption: { name: string; value: string | number | boolean } | null = null;
   private rest: RESTClient;
   private _replied = false;
   private _deferred = false;
@@ -62,13 +79,35 @@ export class Interaction {
     this.user = new User(rawUser);
     this.member = data.member ? this.parseMember(data.member) : null;
 
+    // Parse options & focused option for autocomplete
     this.options = new Map();
+    const findFocused = (opts?: RawInteractionOption[]): RawInteractionOption | null => {
+      if (!opts) return null;
+      for (const opt of opts) {
+        if (opt.focused) return opt;
+        if (opt.options) {
+          const found = findFocused(opt.options);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const focused = findFocused(data.data?.options);
+    if (focused) {
+      this.focusedOption = {
+        name: focused.name,
+        value: focused.value ?? '',
+      };
+    }
+
     for (const opt of data.data?.options ?? []) {
       if (opt.value !== undefined) {
         this.options.set(opt.name, opt.value);
       }
     }
 
+    // Parse values for selects
     if (data.data?.values && this.customId) {
       this.values[this.customId] = data.data.values.length === 1 ? data.data.values[0] : data.data.values;
     }
@@ -83,14 +122,61 @@ export class Interaction {
         }
       }
     }
+
+    // Parse Context Menu Target data
+    this.targetId = data.data?.target_id ?? null;
+    if (this.targetId && data.data?.resolved) {
+      const resolved = data.data.resolved;
+      if (resolved.users && resolved.users[this.targetId]) {
+        this.targetUser = new User(resolved.users[this.targetId]);
+      }
+      if (resolved.messages && resolved.messages[this.targetId]) {
+        this.targetMessage = new Message(resolved.messages[this.targetId], this.rest);
+      }
+    }
+
+    // Parse Entitlements
+    if (data.entitlements) {
+      this.entitlements = data.entitlements.map((e: any) => ({
+        id: e.id,
+        skuId: e.sku_id,
+        applicationId: e.application_id,
+        userId: e.user_id,
+        guildId: e.guild_id,
+        type: e.type,
+        deleted: e.deleted ?? false,
+        startsAt: e.starts_at ? new Date(e.starts_at) : undefined,
+        endsAt: e.ends_at ? new Date(e.ends_at) : undefined,
+      }));
+    }
   }
 
   get isCommand(): boolean {
     return this.type === 2;
   }
 
+  get isAutocomplete(): boolean {
+    return this.type === 4;
+  }
+
+  get commandType(): number {
+    return (this._raw.data as any)?.type ?? 1;
+  }
+
+  get isSlashCommand(): boolean {
+    return this.isCommand && this.commandType === 1;
+  }
+
+  get isUserContext(): boolean {
+    return this.isCommand && this.commandType === 2;
+  }
+
+  get isMessageContext(): boolean {
+    return this.isCommand && this.commandType === 3;
+  }
+
   get isButton(): boolean {
-    return this.type === 3;
+    return this.type === 3 && this.componentType === 2;
   }
 
   get isModalSubmit(): boolean {
@@ -133,6 +219,20 @@ export class Interaction {
 
   get optionValues(): (string | number | boolean)[] {
     return Array.from(this.options.values());
+  }
+
+  getFocused(withValue = false): any {
+    if (!this.focusedOption) return null;
+    return withValue ? this.focusedOption : this.focusedOption.value;
+  }
+
+  async respond(choices: Array<{ name: string; value: string | number }>): Promise<void> {
+    if (this._replied) throw new Error('Interaction already replied');
+    await this.rest.post(`/interactions/${this.id}/${this.token}/callback`, {
+      type: 8, // APPLICATION_COMMAND_AUTOCOMPLETE_RESULT
+      data: { choices },
+    });
+    this._replied = true;
   }
 
   async reply(options: string | InteractionReplyOptions): Promise<void> {
@@ -200,4 +300,3 @@ export class Interaction {
     };
   }
 }
-
